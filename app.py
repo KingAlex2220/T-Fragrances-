@@ -41,7 +41,7 @@ home_scents = [
 PRICE_MAP = {"Men's Fragrances": 45.00, "Women's Fragrances": 45.00, "Home Scents": 30.00}
 
 # --- HEADER & BRANDING ---
-st.markdown("<h1 style='text-align: center; color: #1E293B;'>T FRAGRANCES</h1>", unsafe_html=True)
+st.markdown("<h1 style='text-align: center; color: #1E293B;'>T FRAGRANCES</h1>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; font-style: italic; color: #64748B;'>Designer Quality | 100% Oil-Based | Reimagined Luxury</p>", unsafe_html=True)
 st.markdown("---")
 
