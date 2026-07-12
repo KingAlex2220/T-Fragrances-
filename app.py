@@ -198,4 +198,3 @@ with tab_ops:
     
     if not df_orders.empty:
         st.dataframe(df_orders, use_container_width=True)
-fixed storefront routing script
