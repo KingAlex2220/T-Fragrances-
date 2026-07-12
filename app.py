@@ -281,4 +281,4 @@ else:
                 st.info("The business database log is empty.")
         except Exception:
             st.info("The business database log is empty.")
-EOF
+
