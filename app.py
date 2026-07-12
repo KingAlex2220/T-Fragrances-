@@ -1,227 +1,200 @@
 import streamlit as st
-import pandas as pd
+import sqlite3
 import random
 import datetime
+import os
 
-# --- CONFIGURATION & SESSION STATE INITIALIZATION ---
-st.set_page_config(page_title="T Fragrances - App Suite", page_icon="✨", layout="wide")
+# --- PAGE SETUP & BRANDING ---
+st.set_page_config(page_title="T Fragrances - POS & Tracking", page_icon="✨", layout="wide")
 
-# Initialize persistent mock database for orders if it doesn't exist
-if "order_db" not in st.session_state:
-    st.session_state.order_db = pd.DataFrame(columns=[
-        "Order ID", "Timestamp", "Customer Name", "Category", 
-        "Product Code", "Scent Name", "Payment Method", "Total Paid", "Status"
-    ])
-
-# Initialize user cart
-if "cart" not in st.session_state:
-    st.session_state.cart = None
-
-# --- MOCK DATA GENERATION (Mirroring Master Catalogs) ---
-men_scents = [
-    {"code": "T Fragrances Your Scent #48E", "designer": "CREED", "scent": "AVENTUS"},
-    {"code": "T Fragrances Your Scent #134G", "designer": "PACO RABANNE", "scent": "INVICTUS"},
-    {"code": "T Fragrances Your Scent #17C", "designer": "ARMANI", "scent": "ACQUA DI GIO"},
-    {"code": "T Fragrances Your Scent #155N", "designer": "TOM FORD", "scent": "OMBRE LEATHER"}
-]
-
-women_scents = [
-    {"code": "T Fragrances Your Scent #11A", "designer": "ARIANA GRANDE", "scent": "CLOUD"},
-    {"code": "T Fragrances Your Scent #15A", "designer": "CHANEL", "scent": "COCO MADEMOISELLE"},
-    {"code": "T Fragrances Your Scent #40A", "designer": "CAROLINA HERRERA", "scent": "GOOD GIRL"}
-]
-
-home_scents = [
-    {"code": "T Fragrances Home Scent #2", "designer": "HOUSE BLEND", "scent": "COTTON CANDY"},
-    {"code": "T Fragrances Home Scent #12", "designer": "HOUSE BLEND", "scent": "CUCUMBER MELON"},
-    {"code": "T Fragrances Home Scent #45", "designer": "HOUSE BLEND", "scent": "HOLY SAGE"}
-]
-
-# Price Sheet
-PRICE_MAP = {"Men's Fragrances": 45.00, "Women's Fragrances": 45.00, "Home Scents": 30.00}
-
-# --- HEADER & BRANDING ---
-st.markdown("<h1 style='text-align: center; color: #1E293B;'>T FRAGRANCES</h1>", unsafe_allow_html=True)
-st.markdown("<p style='text-align: center; font-style: italic; color: #64748B;'>Designer Quality | 100% Oil-Based | Reimagined Luxury</p>", unsafe_html=True)
+st.markdown("<h1 style='text-align: center; color: #1E293B; font-family: \"Segoe UI\", sans-serif; margin-bottom: 0;'>T FRAGRANCES</h1>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; font-style: italic; color: #64748B; font-size: 1.1rem; margin-top: 5px;'>Designer Quality | 100% Pure Oil-Based | Reimagined Luxury</p>", unsafe_allow_html=True)
 st.markdown("---")
 
-# Navigation Tabs
-tab_shop, tab_track, tab_admin = st.tabs(["🛒 Customer Storefront & POS", "📦 Track Your Purchase", "🛡️ Admin Order Operations"])
+# --- DATA STORAGE SETUP (SQLite) ---
+DB_FILE = "t_fragrances.db"
+
+def get_db_connection():
+    conn = sqlite3.connect(DB_FILE)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+def init_db():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS orders (
+            order_id TEXT PRIMARY KEY,
+            timestamp TEXT,
+            customer_name TEXT,
+            category TEXT,
+            product_code TEXT,
+            scent_name TEXT,
+            payment_method TEXT,
+            total_paid REAL,
+            status TEXT
+        )
+    """)
+    conn.commit()
+    conn.close()
+
+init_db()
+
+# --- LIGHTWEIGHT TEXT INVENTORY LOADER ---
+@st.cache_data
+def load_catalog_data():
+    men_items = []
+    women_items = []
+    home_items = []
+
+    # 1. Men's Text Catalog
+    if os.path.exists('mens_catalog.txt'):
+        with open('mens_catalog.txt', 'r') as f:
+            for line in f:
+                if line.strip() and '|' in line:
+                    parts = line.split('|')
+                    code = parts[0].strip()
+                    brand = parts[1].strip() if len(parts) > 1 else 'UNKNOWN'
+                    scent = parts[2].strip() if len(parts) > 2 else 'UNKNOWN'
+                    men_items.append({"code": code, "label": f"{code} | {brand} - {scent}", "scent": scent})
+
+    # 2. Women's Text Catalog
+    if os.path.exists('womens_catalog.txt'):
+        with open('womens_catalog.txt', 'r') as f:
+            for line in f:
+                if line.strip() and '|' in line:
+                    parts = line.split('|')
+                    code = parts[0].strip()
+                    brand = parts[1].strip() if len(parts) > 1 else 'UNKNOWN'
+                    scent = parts[2].strip() if len(parts) > 2 else 'UNKNOWN'
+                    women_items.append({"code": code, "label": f"{code} | {brand} - {scent}", "scent": scent})
+
+    # 3. Home Scents Text Catalog
+    if os.path.exists('home_catalog.txt'):
+        with open('home_catalog.txt', 'r') as f:
+            for line in f:
+                if line.strip() and '|' in line:
+                    parts = line.split('|')
+                    code = parts[0].strip()
+                    scent = parts[1].strip() if len(parts) > 1 else 'UNKNOWN'
+                    home_items.append({"code": code, "label": f"{code} | House Blend - {scent}", "scent": scent})
+
+    # Emergency Fallbacks if files are empty
+    if not men_items:
+        men_items = [{"code": "#48E", "label": "#48E | Creed - Aventus", "scent": "Aventus"}]
+    if not women_items:
+        women_items = [{"code": "#15A", "label": "#15A | BACCARAT - ROUGE 540", "scent": "ROUGE 540"}]
+    if not home_items:
+        home_items = [{"code": "H#1", "label": "H#1 | House Blend - 4 EVER SUN", "scent": "4 EVER SUN"}]
+
+    return men_items, women_items, home_items
+
+men_catalog, women_catalog, home_catalog = load_catalog_data()
+PRICE_SHEET = {"Men's Premium Oils": 80.00, "Women's Premium Oils": 80.00, "Home & House Scents": 30.00}
+
+# --- NAVIGATION TABS ---
+tab_pos, tab_track, tab_ops = st.tabs(["🛒 Register & Digital POS", "📦 Track Client Order", "🛡️ Admin Operations Management"])
 
 # ==========================================
-# TAB 1: CUSTOMER STOREFRONT & DIGITAL POS
+# TAB 1: POINT OF SALE TERMINAL
 # ==========================================
-with tab_shop:
-    st.subheader("Digital Point of Sale (POS) Checkout")
+with tab_pos:
+    st.subheader("Point of Sale Terminal")
+    col_entry, col_invoice = st.columns([3, 2])
     
-    col_input, col_summary = st.columns([2, 1])
-    
-    with col_input:
-        st.markdown("### 1. Select Product Category")
-        category = st.radio("What are we shopping for today?", ["Men's Fragrances", "Women's Fragrances", "Home Scents"], horizontal=True)
-        
-        # Determine product list based on category
-        if category == "Men's Fragrances":
-            active_list = men_scents
-        elif category == "Women's Fragrances":
-            active_list = women_scents
-        else:
-            active_list = home_scents
+    with col_entry:
+        with st.container(border=True):
+            st.markdown("#### 1. Select Product Family")
+            cat_select = st.radio("Line Segment:", ["Men's Premium Oils", "Women's Premium Oils", "Home & House Scents"], horizontal=True)
             
-        options_format = [f"{item['code']} - Inspired by {item['designer']} ({item['scent']})" for item in active_list]
-        
-        st.markdown("### 2. Choose Scent")
-        selected_option = st.selectbox("Locate your alphanumeric matching code:", options_format)
-        
-        # Extract selected item info
-        selected_index = options_format.index(selected_option)
-        chosen_item = active_list[selected_index]
-        
-        st.markdown("### 3. Customer & Payment Details")
-        cust_name = st.text_input("Customer Full Name:", placeholder="Alex Thompson")
-        pay_method = st.selectbox("Select Digital Payment Method:", ["Apple Pay", "Venmo", "Cash App", "Credit/Debit Card", "Zelle"])
-        
-        if st.button("Calculate Order Summary", type="primary"):
-            if cust_name.strip() == "":
-                st.error("Please enter a customer name to proceed.")
+            if cat_select == "Men's Premium Oils":
+                active_list = men_catalog
+            elif cat_select == "Women's Premium Oils":
+                active_list = women_catalog
             else:
-                st.session_state.cart = {
-                    "Customer Name": cust_name,
-                    "Category": category,
-                    "Product Code": chosen_item["code"],
-                    "Scent Name": chosen_item["scent"],
-                    "Payment Method": pay_method,
-                    "Price": PRICE_MAP[category]
+                active_list = home_catalog
+                
+            st.markdown("#### 2. Scan / Match Alphanumeric Code")
+            selected_display = st.selectbox("Search master index:", [item["label"] for item in active_list])
+            
+            matching_obj = next(item for item in active_list if item["label"] == selected_display)
+            
+            st.markdown("#### 3. Checkout Data Ingestion")
+            client_name = st.text_input("Customer Name:", placeholder="Jane Doe")
+            payment_vector = st.selectbox("Digital Settlement Channel:", ["Apple Pay", "Venmo", "Cash App", "Credit Card Swipe", "Zelle", "Cash"])
+            
+            generate_click = st.button("Generate Invoice Configuration", type="primary")
+            
+        if generate_click:
+            if not client_name.strip():
+                st.error("Please enter a valid Customer Name.")
+            else:
+                st.session_state.pos_cart = {
+                    "client": client_name.strip(),
+                    "category": cat_select,
+                    "code": matching_obj["code"],
+                    "scent": matching_obj["scent"],
+                    "vector": payment_vector,
+                    "price": PRICE_SHEET[cat_select]
                 }
-
-    with col_summary:
-        st.markdown("### 🧾 Live Invoice")
-        if st.session_state.cart is not None:
-            cart = st.session_state.cart
-            st.info(f"**Ready for Payment Processing via {cart['Payment Method']}**")
-            
-            st.markdown(f"**Customer:** {cart['Customer Name']}")
-            st.markdown(f"**Item Selection:** {cart['Product Code']}")
-            st.markdown(f"**Scent Profile:** {cart['Scent Name']}")
-            st.markdown("---")
-            st.markdown(f"### **Total Due: ${cart['Price']:.2f}**")
-            st.caption("100% pure oil concentration formulation.")
-            
-            if st.button("Confirm Digital Payment & Process Order"):
-                # Generate unique Order ID
-                order_id = f"TF-{random.randint(10000, 99999)}"
-                timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 
-                # Append to persistent DataFrame
-                new_order = pd.DataFrame([{
-                    "Order ID": order_id,
-                    "Timestamp": timestamp,
-                    "Customer Name": cart["Customer Name"],
-                    "Category": cart["Category"],
-                    "Product Code": cart["Product Code"],
-                    "Scent Name": cart["Scent Name"],
-                    "Payment Method": cart["Payment Method"],
-                    "Total Paid": cart["Price"],
-                    "Status": "Processing (Oil Ratios Verifying)"
-                }])
+    with col_invoice:
+        st.markdown("#### 🧾 Live Transaction Processing")
+        if "pos_cart" in st.session_state and st.session_state.pos_cart is not None:
+            cart = st.session_state.pos_cart
+            st.warning(f"**Awaiting Authorization via {cart['vector']}**")
+            st.metric("Total Line Settlement Due", f"${cart['price']:.2f}")
+            st.write(f"• **Purchaser:** {cart['client']}")
+            st.write(f"• **Alphanumeric Code Mapping:** {cart['code']}")
+            st.write(f"• **Scent Formulation Blueprint:** {cart['scent']}")
+            
+            if st.button("Post Settlement Clear (Process Order)"):
+                generated_id = f"TF-{random.randint(10000, 99999)}"
+                timestamp_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 
-                st.session_state.order_db = pd.concat([st.session_state.order_db, new_order], ignore_index=True)
-                st.success(f"🎉 Payment successful via {cart['Payment Method']}! Order Created.")
+                conn = get_db_connection()
+                cursor = conn.cursor()
+                cursor.execute("""
+                    INSERT INTO orders (order_id, timestamp, customer_name, category, product_code, scent_name, payment_method, total_paid, status)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (generated_id, timestamp_str, cart['client'], cart['category'], cart['code'], cart['scent'], cart['vector'], cart['price'], "Processing"))
+                conn.commit()
+                conn.close()
+                
+                st.success(f"Transaction Cleared! Tracking Code: {generated_id}")
                 st.balloons()
-                
-                # Show receipt copy
-                st.code(f"""
-                ===================================
-                           T FRAGRANCES
-                ===================================
-                ORDER ID: {order_id}
-                DATE: {timestamp}
-                CLIENT: {cart['Customer Name']}
-                -----------------------------------
-                CODE: {cart['Product Code']}
-                SCENT: {cart['Scent Name']}
-                BASE: 100% Pure Oil Formula
-                -----------------------------------
-                PAID VIA: {cart['Payment Method']}
-                TOTAL: ${cart['Price']:.2f}
-                ===================================
-                Thank you for choosing reimagined luxury!
-                """)
-                
-                # Clear temporary cart state
-                st.session_state.cart = None
+                st.session_state.pos_cart = None
         else:
-            st.write("No active transaction items calculated yet.")
+            st.info("Terminal completely clear.")
 
 # ==========================================
-# TAB 2: CUSTOMER PURCHASE TRACKING PORTAL
+# TAB 2: TRACKING PORTAL
 # ==========================================
 with tab_track:
-    st.subheader("Track Your Scent Order")
-    st.write("Enter your unique tracking receipt reference number (`TF-XXXXX`) to check your pipeline routing status.")
+    st.subheader("Customer Order Fulfillment Tracking")
+    user_query_input = st.text_input("Input Your Tracking Code:", placeholder="TF-43210").strip()
     
-    search_id = st.text_input("Order ID:", placeholder="TF-12345").strip()
-    
-    if st.button("Search Pipeline Status"):
-        db = st.session_state.order_db
-        match = db[db["Order ID"] == search_id]
-        
-        if not match.empty:
-            order_info = match.iloc[0]
-            st.markdown("#### Order Blueprint Record Found:")
-            
-            # Status tracking stepper UI card
-            st.metric(label="Current Production Status", value=order_info["Status"])
-            
-            col_t1, col_t2 = st.columns(2)
-            with col_t1:
-                st.write(f"**Customer Name:** {order_info['Customer Name']}")
-                st.write(f"**Product Mapping:** {order_info['Product Code']}")
-                st.write(f"**Scent Profile:** {order_info['Scent Name']}")
-            with col_t2:
-                st.write(f"**Order Log Time:** {order_info['Timestamp']}")
-                st.write(f"**Funding Vector:** {order_info['Payment Method']}")
-                st.write(f"**Amount Handled:** ${order_info['Total Paid']:.2f}")
-        else:
-            st.error("No record found matching that Order ID. Please check your spelling or contact support.")
+    if st.button("Run Pipeline Diagnostic Query"):
+        if user_query_input:
+            conn = get_db_connection()
+            row = conn.execute("SELECT * FROM orders WHERE order_id = ?", (user_query_input,)).fetchone()
+            conn.close()
+            if row:
+                st.markdown(f"### Update Diagnostic: Order Found ✅")
+                st.metric("Current Production Progress Status", row["status"])
+                st.write(f"**Customer Account:** {row['customer_name']} | **Formula Target:** {row['scent_name']}")
+            else:
+                st.error("No transaction matching that serial code was found.")
 
 # ==========================================
-# TAB 3: ADMIN ORDER OPERATIONS & MONITORING
+# TAB 3: ADMIN PORTAL
 # ==========================================
-with tab_admin:
-    st.subheader("Secure Operational Dashboard")
-    st.caption("Internal fulfillment tools to update batch status logs and check payment performance metrics.")
+with tab_ops:
+    st.subheader("Internal Business Management Panel")
+    conn = get_db_connection()
+    import pandas as pd
+    df_orders = pd.read_sql_query("SELECT * FROM orders", conn)
+    conn.close()
     
-    db = st.session_state.order_db
-    
-    if db.empty:
-        st.info("No incoming orders logged in this instance session yet.")
-    else:
-        # Display high level tracking metrics
-        col_m1, col_m2, col_m3 = st.columns(3)
-        col_m1.metric("Total Income Volume", f"${db['Total Paid'].sum():.2f}")
-        col_m2.metric("Total Bottles Ordered", len(db))
-        col_m3.metric("Pending Formulations", len(db[db["Status"] != "Shipped / Picked Up"]))
-        
-        st.markdown("### Master Inflow Pipeline Log")
-        st.dataframe(db, use_container_width=True)
-        
-        st.markdown("---")
-        st.markdown("### Change Scent Fulfillment Progress")
-        
-        col_up1, col_up2 = st.columns(2)
-        with col_up1:
-            selected_id_to_edit = st.selectbox("Target Order ID to modify:", db["Order ID"].unique())
-        with col_up2:
-            new_status_val = st.selectbox("Updated Pipeline Status:", [
-                "Processing (Oil Ratios Verifying)",
-                "Batch Steeping & Blending",
-                "Quality Inspection Completed",
-                "Out for Courier Delivery",
-                "Shipped / Picked Up"
-            ])
-            
-        if st.button("Commit Status Transition Update"):
-            st.session_state.order_db.loc[st.session_state.order_db["Order ID"] == selected_id_to_edit, "Status"] = new_status_val
-            st.success(f"Status for {selected_id_to_edit} updated to: '{new_status_val}'")
-            st.rerun()
+    if not df_orders.empty:
+        st.dataframe(df_orders, use_container_width=True)
