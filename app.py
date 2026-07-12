@@ -1,4 +1,3 @@
-cat << 'EOF' > app.py
 import streamlit as st
 import sqlite3
 import random
