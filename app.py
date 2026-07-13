@@ -55,23 +55,23 @@ init_db()
 
 # --- EMBEDDED MASTER CATALOG ---
 men_catalog = [
-    {"code": "#48E", "label": "#48E | Impression of Creed - Aventus", "scent": "Impression of Aventus"},
-    {"code": "#135G", "label": "#135G | Impression of Paco Rabanne - Invictus", "scent": "Impression of Invictus"},
-    {"code": "#91", "label": "#91 | Impression of  Jimmy Choo - Man", "scent": "Impression of Man"},
-    {"code": "#135A", "label": "#135A | Impression of Paco Rabanne - One Million", "scent": "Impression of One Million"},
-    {"code": "#53B", "label": "#53B | Impression of Dolce & Gabbana - Light Blue", "scent": "Impression of Light Blue"},
-    {"code": "#53G", "label": "#53G | Impression of Dolce & Gabbana - King", "scent": "Impression of King"},
-    {"code": "#168J", "label": "#168J | Impression of YSL - Myself Absolute", "scent": "Impression of Myself Absolute"},
-    {"code": "#18G", "label": "#18G | Impression of Armani - Armani Code", "scent": "Impression of Armani Code"},
-    {"code": "#15A", "label": "#15A | Impression of Maison Francis Kurkdjian - Baccarat 540", "scent": "Impression of Baccarat 540"},
-    {"code": "#43B", "label": "#43B | Impression of Christian Dior - Sauvage", "scent": "Impression of Sauvage"}
+    {"code": "#48E", "label": "#48E | Impression of Creed - Aventus", "scent": "Aventus"},
+    {"code": "#135G", "label": "#135G | Impression of Paco Rabanne - Invictus", "scent": "Invictus"},
+    {"code": "#91", "label": "#91 | Impression of  Jimmy Choo - Man", "scent": "Man"},
+    {"code": "#135A", "label": "#135A | Impression of Paco Rabanne - One Million", "scent": "One Million"},
+    {"code": "#53B", "label": "#53B | Impression of Dolce & Gabbana - Light Blue", "scent": "Light Blue"},
+    {"code": "#53G", "label": "#53G | Impression of Dolce & Gabbana - King", "scent": "King"},
+    {"code": "#168J", "label": "#168J | Impression of YSL - Myself Absolute", "scent": "Myself Absolute"},
+    {"code": "#18G", "label": "#18G | Impression of Armani - Armani Code", "scent": "Armani Code"},
+    {"code": "#15A", "label": "#15A | Impression of Maison Francis Kurkdjian - Baccarat 540", "scent": "Baccarat 540"},
+    {"code": "#43B", "label": "#43B | Impression of Christian Dior - Sauvage", "scent": "Sauvage"}
 ]
 
 women_catalog = [
-    {"code": "#15A", "label": "#15A | Impression of Baccarat - Rouge 540", "scent": "Impression of Rouge 540"},
-    {"code": "#16", "label": "#16 | Impression of Chanel - Coco Mademoiselle", "scent": "Impression of Coco Mademoiselle"},
-    {"code": "#17", "label": "#17 | Impression of Dior - Miss Dior", "scent": "Impression of Miss Dior"},
-    {"code": "#21A", "label": "#21A | Impression of Chanel - Chance", "scent": "Impression of Chance"}
+    {"code": "#15A", "label": "#15A | Impression of Baccarat - Rouge 540", "scent": "Rouge 540"},
+    {"code": "#16", "label": "#16 | Impression of Chanel - Coco Mademoiselle", "scent": "Coco Mademoiselle"},
+    {"code": "#17", "label": "#17 | Impression of Dior - Miss Dior", "scent": "Miss Dior"},
+    {"code": "#21A", "label": "#21A | Impression of Chanel - Chance", "scent": "Chance"}
 ]
 
 home_catalog = [
@@ -125,7 +125,7 @@ if access_mode == "🛍️ Public Storefront":
                 web_qty = st.number_input("Select Quantity:", min_value=1, max_value=50, value=1, step=1, key="web_quantity_select")
                 
                 if os.path.exists(LOCAL_BOTTLE_IMG):
-                    st.image(LOCAL_BOTTLE_IMG, caption=f"Signature Presentation Model — Featured Scent: {matching_obj['scent']}", use_container_width=true)
+                    st.image(LOCAL_BOTTLE_IMG, caption=f"Signature Presentation Model — Featured Scent: {matching_obj['scent']}", use_container_width=True)
                 else:
                     st.info("💡 Image loading configuration pending sync.")
                 
