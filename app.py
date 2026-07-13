@@ -55,23 +55,23 @@ init_db()
 
 # --- EMBEDDED MASTER CATALOG ---
 men_catalog = [
-    {"code": "#48E", "label": "#48E | Creed - Aventus", "scent": "Aventus"},
-    {"code": "#135G", "label": "#135G | Paco Rabanne - Invictus", "scent": "Invictus"},
-    {"code": "#91", "label": "#91 | Jimmy Choo - Man", "scent": "Man"},
-    {"code": "#135A", "label": "#135A | Paco Rabanne - One Million", "scent": "One Million"},
-    {"code": "#53B", "label": "#53B | Dolce & Gabbana - Light Blue", "scent": "Light Blue"},
-    {"code": "#53G", "label": "#53G | Dolce & Gabbana - King", "scent": "King"},
-    {"code": "#168J", "label": "#168J | YSL - Myself Absolute", "scent": "Myself Absolute"},
-    {"code": "#18G", "label": "#18G | Armani - Armani Code", "scent": "Armani Code"},
-    {"code": "#15A", "label": "#15A | Maison Francis Kurkdjian - Baccarat 540", "scent": "Baccarat 540"},
-    {"code": "#43B", "label": "#43B | Christian Dior - Sauvage", "scent": "Sauvage"}
+    {"code": "#48E", "label": "#48E | Impression of Creed - Aventus", "scent": "Aventus"},
+    {"code": "#135G", "label": "#135G | Impression of Paco Rabanne - Invictus", "scent": "Invictus"},
+    {"code": "#91", "label": "#91 | Impression of  Jimmy Choo - Man", "scent": "Man"},
+    {"code": "#135A", "label": "#135A | Impression of Paco Rabanne - One Million", "scent": "One Million"},
+    {"code": "#53B", "label": "#53B | Impression of Dolce & Gabbana - Light Blue", "scent": "Light Blue"},
+    {"code": "#53G", "label": "#53G | Impression of Dolce & Gabbana - King", "scent": "King"},
+    {"code": "#168J", "label": "#168J | Impression of YSL - Myself Absolute", "scent": "Myself Absolute"},
+    {"code": "#18G", "label": "#18G | Impression of Armani - Armani Code", "scent": "Armani Code"},
+    {"code": "#15A", "label": "#15A | Impression of Maison Francis Kurkdjian - Baccarat 540", "scent": "Baccarat 540"},
+    {"code": "#43B", "label": "#43B | Impression of Christian Dior - Sauvage", "scent": "Sauvage"}
 ]
 
 women_catalog = [
-    {"code": "#15A", "label": "#15A | Baccarat - Rouge 540", "scent": "Rouge 540"},
-    {"code": "#16", "label": "#16 | Chanel - Coco Mademoiselle", "scent": "Coco Mademoiselle"},
-    {"code": "#17", "label": "#17 | Dior - Miss Dior", "scent": "Miss Dior"},
-    {"code": "#21A", "label": "#21A | Chanel - Chance", "scent": "Chance"}
+    {"code": "#15A", "label": "#15A | Impression of Baccarat - Rouge 540", "scent": "Rouge 540"},
+    {"code": "#16", "label": "#16 | Impression of Chanel - Coco Mademoiselle", "scent": "Coco Mademoiselle"},
+    {"code": "#17", "label": "#17 | Impression of Dior - Miss Dior", "scent": "Miss Dior"},
+    {"code": "#21A", "label": "#21A | Impression of Chanel - Chance", "scent": "Chance"}
 ]
 
 home_catalog = [
