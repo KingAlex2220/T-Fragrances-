@@ -6,28 +6,6 @@ import os
 import pandas as pd
 from twilio.rest import Client
 
-# --- TWILIO SMS CONFIGURATION ---
-TWILIO_ACCOUNT_SID = "YOUR_TWILIO_ACCOUNT_SID"
-TWILIO_AUTH_TOKEN = "YOUR_TWILIO_AUTH_TOKEN"
-TWILIO_NUMBER = "+1234567890"
-
-def send_sms_confirmation(to_phone, customer_name, order_id, total_amount):
-    if "YOUR_TWILIO" in TWILIO_ACCOUNT_SID or not to_phone:
-        return False
-    try:
-        client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
-        message_body = (
-            f"Hi {customer_name}! Thank you for shopping with T Fragrances. "
-            f"Your order {order_id} has been received! "
-            f"Total due: ${total_amount:.2f}. Please check your order page to "
-            f"complete your Zelle settlement. Thank you for your business!"
-        )
-        client.messages.create(body=message_body, from_=TWILIO_NUMBER, to=to_phone)
-        return True
-    except Exception as e:
-        print(f"SMS System Notification: Failed to dispatch confirmation text. Error: {e}")
-        return False
-
 # --- PAGE SETUP & BRANDING ---
 st.set_page_config(page_title="T Fragrances - Storefront & POS", page_icon="✨", layout="wide")
 
