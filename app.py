@@ -125,7 +125,7 @@ if access_mode == "🛍️ Public Storefront":
                 web_qty = st.number_input("Select Quantity:", min_value=1, max_value=50, value=1, step=1, key="web_quantity_select")
                 
                 if os.path.exists(LOCAL_BOTTLE_IMG):
-                    st.image(LOCAL_BOTTLE_IMG, caption=f"Signature Presentation Model : #{matching_obj['scent']}", use_container_width=True)
+                    st.image(LOCAL_BOTTLE_IMG, caption=f"Signature Presentation Model
                 else:
                     st.info("💡 Image loading configuration pending sync.")
                 
