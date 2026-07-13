@@ -105,8 +105,6 @@ elif password:
 # PUBLIC VIEW: ONLINE STOREFRONT
 # ==========================================
 if access_mode == "🛍️ Public Storefront":
-    
-    # Created top-level tabs for customers to toggle between shopping and tracking easily
     store_tab, track_tab = st.tabs(["🛍️ Order Online", "📦 Track My Order"])
     
     with store_tab:
@@ -199,7 +197,6 @@ if access_mode == "🛍️ Public Storefront":
             else:
                 st.info("Select a scent and fill out details to view invoice configurations.")
 
-    # --- CUSTOMER TRACKING SECTION ---
     with track_tab:
         st.subheader("📦 Real-Time Order Tracking")
         st.write("Enter your order tracking identification code (e.g., `TF-WEB-1234`) to check your current fulfillment status.")
@@ -217,7 +214,6 @@ if access_mode == "🛍️ Public Storefront":
                         st.markdown("---")
                         st.markdown(f"### Order Details for `{cust_query_id}`")
                         
-                        # Style status indicators beautifully for the customer experience
                         status_raw = row["status"]
                         status_emoji = "⏳"
                         status_color = "orange"
@@ -265,7 +261,6 @@ else:
                 selected_display = st.selectbox("Search master index:", [item["label"] for item in active_list], key="pos_scent")
                 matching_obj = next(item for item in active_list if item["label"] == selected_display)
                 
-                # POS Quantity Selector
                 pos_qty = st.number_input("In-Person Quantity:", min_value=1, max_value=100, value=1, step=1, key="pos_qty_select")
                 
                 client_name = st.text_input("Walk-in Customer Name:", placeholder="Jane Doe")
@@ -353,15 +348,42 @@ else:
                 except Exception:
                     st.error("Database error.")
 
+    # --- COMPLETE GLOBAL FINANCIAL LEDGER MATRIX WITH 30-DAY TRUCKING ---
     with tab_ops:
         st.markdown("### Complete Global Financial Ledger Matrix")
         try:
             conn = get_db_connection()
             df_orders = pd.read_sql_query("SELECT * FROM orders_v2 ORDER BY timestamp DESC", conn)
             conn.close()
+            
             if not df_orders.empty:
-                st.dataframe(df_orders, use_container_width=True)
+                # --- NEW: 30-DAY TIMEFRAME CALCULATOR ---
+                df_orders['parsed_time'] = pd.to_datetime(df_orders['timestamp'], format="%Y-%m-%d %H:%M:%S", errors='coerce')
+                
+                thirty_days_ago = datetime.datetime.now() - datetime.timedelta(days=30)
+                df_30_days = df_orders[df_orders['parsed_time'] >= thirty_days_ago]
+                
+                # Metrics Display Summary
+                col_m1, col_m2, col_m3 = st.columns(3)
+                with col_m1:
+                    st.metric("30-Day Total Orders", len(df_30_days))
+                with col_m2:
+                    st.metric("30-Day Revenue Metric", f"${df_30_days['total_paid'].sum():.2f}")
+                with col_m3:
+                    st.metric("30-Day Bottles Sold", int(df_30_days['quantity'].sum()) if 'quantity' in df_30_days.columns else len(df_30_days))
+                
+                st.markdown("---")
+                
+                # Interactive Ledger Filter checkbox
+                show_only_30_days = st.checkbox("📅 Filter Matrix Ledger view to past 30 days only", value=False)
+                
+                display_df = df_30_days if show_only_30_days else df_orders
+                # Drop intermediate parsed column before showcasing table matrix
+                if 'parsed_time' in display_df.columns:
+                    display_df = display_df.drop(columns=['parsed_time'])
+                    
+                st.dataframe(display_df, use_container_width=True)
             else:
                 st.info("The business database log is empty.")
-        except Exception:
+        except Exception as e:
             st.info("The business database log is empty.")
