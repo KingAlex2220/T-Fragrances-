@@ -23,6 +23,8 @@ def get_db_connection():
 def init_db():
     conn = get_db_connection()
     cursor = conn.cursor()
+    
+    # Base schema matching initial logic
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS orders_v2 (
             order_id TEXT PRIMARY KEY,
@@ -39,6 +41,13 @@ def init_db():
             order_type TEXT
         )
     """)
+    
+    # Dynamic schema migration to safely inject 'quantity' column if missing
+    try:
+        cursor.execute("SELECT quantity FROM orders_v2 LIMIT 1")
+    except sqlite3.OperationalError:
+        cursor.execute("ALTER TABLE orders_v2 ADD COLUMN quantity INTEGER DEFAULT 1")
+        
     conn.commit()
     conn.close()
 
@@ -105,9 +114,12 @@ if access_mode == "🛍️ Public Storefront":
             cat_select = st.radio("Product Family:", ["Men's Premium Oils", "Women's Premium Oils", "Home & House Scents"], horizontal=True)
             active_list = men_catalog if cat_select == "Men's Premium Oils" else (women_catalog if cat_select == "Women's Premium Oils" else home_catalog)
                 
-            st.markdown("#### 2. Choose Your Scent")
+            st.markdown("#### 2. Choose Your Scent & Size")
             selected_display = st.selectbox("Available Inventory Index:", [item["label"] for item in active_list])
             matching_obj = next(item for item in active_list if item["label"] == selected_display)
+            
+            # Quantity input added here
+            web_qty = st.number_input("Select Quantity:", min_value=1, max_value=50, value=1, step=1, key="web_quantity_select")
             
             if os.path.exists(LOCAL_BOTTLE_IMG):
                 st.image(LOCAL_BOTTLE_IMG, caption=f"Signature Presentation Model — Featured Scent: {matching_obj['scent']}", use_container_width=True)
@@ -131,7 +143,8 @@ if access_mode == "🛍️ Public Storefront":
                     "category": cat_select,
                     "code": matching_obj["code"],
                     "scent": matching_obj["scent"],
-                    "total": PRICE_PER_BOTTLE
+                    "quantity": int(web_qty),
+                    "total": float(PRICE_PER_BOTTLE * web_qty)
                 }
 
     with col_store_right:
@@ -143,6 +156,7 @@ if access_mode == "🛍️ Public Storefront":
             st.write(f"• **Purchaser:** {cart['name']}")
             st.write(f"• **Phone:** {cart['phone']}")
             st.write(f"• **Selection:** {cart['code']} - {cart['scent']}")
+            st.write(f"• **Quantity Ordered:** {cart['quantity']} bottle(s)")
             
             if st.button("Confirm & Place Order"):
                 generated_id = f"TF-WEB-{random.randint(1000, 9999)}"
@@ -151,12 +165,13 @@ if access_mode == "🛍️ Public Storefront":
                 conn = get_db_connection()
                 cursor = conn.cursor()
                 cursor.execute("""
-                    INSERT INTO orders_v2 (order_id, timestamp, customer_name, phone_number, delivery_address, category, product_code, scent_name, payment_method, total_paid, status, order_type)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """, (generated_id, timestamp_str, cart['name'], cart['phone'], cart['address'], cart['category'], cart['code'], cart['scent'], "Zelle Pending", cart['total'], "Awaiting Payment", "Online Store"))
+                    INSERT INTO orders_v2 (order_id, timestamp, customer_name, phone_number, delivery_address, category, product_code, scent_name, quantity, payment_method, total_paid, status, order_type)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (generated_id, timestamp_str, cart['name'], cart['phone'], cart['address'], cart['category'], cart['code'], cart['scent'], cart['quantity'], "Zelle Pending", cart['total'], "Awaiting Payment", "Online Store"))
                 conn.commit()
                 conn.close()
                 st.session_state.last_order_id = generated_id
+                st.session_state.last_order_total = cart['total']
                 st.session_state.web_cart = None
                 st.rerun()
                 
@@ -164,7 +179,7 @@ if access_mode == "🛍️ Public Storefront":
             st.success(f"🎉 Order Placed! ID: {st.session_state.last_order_id}")
             st.markdown("### 💰 Scan or Use Info to Pay:")
             st.markdown(f"""
-            Send your **$80.00** payment via **Zelle**:
+            Send your **${st.session_state.get('last_order_total', PRICE_PER_BOTTLE):.2f}** payment via **Zelle**:
             * **Recipient Phone:** `863-236-4196`
             * **Name:** Alexander Thompson
             
@@ -173,7 +188,8 @@ if access_mode == "🛍️ Public Storefront":
             if os.path.exists(LOCAL_QR_IMG):
                 st.image(LOCAL_QR_IMG, caption="Scan with your banking app to Zelle instantly", width=300)
             if st.button("Clear Screen / Place New Order"):
-                del st.session_state.last_order_id
+                if "last_order_id" in st.session_state: del st.session_state.last_order_id
+                if "last_order_total" in st.session_state: del st.session_state.last_order_total
                 st.rerun()
         else:
             st.info("Select a scent and fill out details to view invoice configurations.")
@@ -194,6 +210,10 @@ else:
                 active_list = men_catalog if cat_select == "Men's Premium Oils" else (women_catalog if cat_select == "Women's Premium Oils" else home_catalog)
                 selected_display = st.selectbox("Search master index:", [item["label"] for item in active_list], key="pos_scent")
                 matching_obj = next(item for item in active_list if item["label"] == selected_display)
+                
+                # POS Quantity Selector
+                pos_qty = st.number_input("In-Person Quantity:", min_value=1, max_value=100, value=1, step=1, key="pos_qty_select")
+                
                 client_name = st.text_input("Walk-in Customer Name:", placeholder="Jane Doe")
                 payment_vector = st.selectbox("Settlement Channel:", ["Cash", "Zelle Scan", "Apple Pay", "Venmo", "Cash App"])
                 generate_click = st.button("Process Live Checkout Configuration")
@@ -208,7 +228,8 @@ else:
                         "code": matching_obj["code"],
                         "scent": matching_obj["scent"],
                         "vector": payment_vector,
-                        "price": PRICE_PER_BOTTLE
+                        "quantity": int(pos_qty),
+                        "price": float(PRICE_PER_BOTTLE * pos_qty)
                     }
                     
         with col_invoice:
@@ -216,6 +237,8 @@ else:
                 cart = st.session_state.pos_cart
                 st.warning(f"**Awaiting Settlement Verification via {cart['vector']}**")
                 st.metric("Immediate Cash Flow Collected", f"${cart['price']:.2f}")
+                st.write(f"• **Customer:** {cart['client']}")
+                st.write(f"• **Scent:** {cart['scent']} ({cart['quantity']} Unit(s))")
                 
                 if st.button("Commit Sale to Ledger"):
                     generated_id = f"TF-POS-{random.randint(1000, 9999)}"
@@ -223,9 +246,9 @@ else:
                     conn = get_db_connection()
                     cursor = conn.cursor()
                     cursor.execute("""
-                        INSERT INTO orders_v2 (order_id, timestamp, customer_name, phone_number, delivery_address, category, product_code, scent_name, payment_method, total_paid, status, order_type)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """, (generated_id, timestamp_str, cart['client'], 'N/A', 'In-Person Sale', cart['category'], cart['code'], cart['scent'], cart['vector'], cart['price'], "Completed & Handed Over", "POS Register"))
+                        INSERT INTO orders_v2 (order_id, timestamp, customer_name, phone_number, delivery_address, category, product_code, scent_name, quantity, payment_method, total_paid, status, order_type)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """, (generated_id, timestamp_str, cart['client'], 'N/A', 'In-Person Sale', cart['category'], cart['code'], cart['scent'], cart['quantity'], cart['vector'], cart['price'], "Completed & Handed Over", "POS Register"))
                     conn.commit()
                     conn.close()
                     st.success(f"Transaction Recorded! Code: {generated_id}")
@@ -238,7 +261,7 @@ else:
         st.markdown("### Online Orders Awaiting Verification")
         try:
             conn = get_db_connection()
-            pending_df = pd.read_sql_query("SELECT order_id, timestamp, customer_name, phone_number, product_code, scent_name, status FROM orders_v2 WHERE order_type = 'Online Store' AND status = 'Awaiting Payment'", conn)
+            pending_df = pd.read_sql_query("SELECT order_id, timestamp, customer_name, phone_number, product_code, scent_name, quantity, total_paid, status FROM orders_v2 WHERE order_type = 'Online Store' AND status = 'Awaiting Payment'", conn)
             conn.close()
             if pending_df.empty:
                 st.success("No pending web orders require attention.")
@@ -270,6 +293,7 @@ else:
                     if row:
                         st.markdown(f"### Update Diagnostic: Order Found ✅")
                         st.metric("Fulfillment Processing Status", row["status"])
+                        st.write(f"• **Quantity:** {row['quantity']} Unit(s) — **Total:** ${row['total_paid']:.2f}")
                     else:
                         st.error("No transaction found.")
                 except Exception:
