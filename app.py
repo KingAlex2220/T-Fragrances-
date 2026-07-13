@@ -75,17 +75,17 @@ PRICE_PER_BOTTLE = 80.00
 LOCAL_BOTTLE_IMG = "images/bottles.png"
 LOCAL_QR_IMG = "images/zelle_qr.png"
 
-# --- SIDEBAR ACCESS INTERFACE (SECURED & HIDDEN) ---
+# --- SIDEBAR ACCESS INTERFACE (SECURED & HIDDEN BY DEFAULT) ---
 st.sidebar.markdown("### 🔒 System Portal")
 
 # Default view for regular users
 access_mode = "🛍️ Public Storefront"
 
-# Discreet login menu for you
-with st.sidebar.expander("Staff Portal"):
+# Expanded is explicitly forced to False to keep the menu collapsed on load
+with st.sidebar.expander("Staff Portal", expanded=False):
     password = st.text_input("Enter Admin Password:", type="password", key="admin_password_input")
 
-# Only grant visibility to the Dashboard if password is correct
+# Only grant visibility to the Dashboard if password matches 'tf80'
 if password == "tf80":
     st.sidebar.success("Authenticated")
     access_mode = st.sidebar.radio("View Mode", ["🛍️ Public Storefront", "💼 Owner Dashboard"])
