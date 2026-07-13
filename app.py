@@ -5,31 +5,6 @@ import datetime
 import os
 import pandas as pd
 
-#Page Security
-def check_password():
-    """Returns True if the user had the correct password."""
-    def password_entered():
-        if st.sidebar.text_input("Owner PIN", type="password") == "2220":
-            st.session_state["password_correct"] = True
-        else:
-            st.session_state["password_correct"] = False
-
-    if "password_correct" not in st.session_state:
-        # First run, show input
-        st.sidebar.text_input("Owner PIN", type="password", on_change=password_entered, key="password_input")
-        return False
-    elif not st.session_state["password_correct"]:
-        # Password not correct, show input again
-        st.sidebar.text_input("Owner PIN", type="password", on_change=password_entered, key="password_input")
-        return False
-    else:
-        # Password correct, show content
-        return True
-
-# Now, add this one line to call the gatekeeper:
-if not check_password():
-    st.stop()  # This prevents the rest of the app from running
-    
 # --- PAGE SETUP & BRANDING ---
 st.set_page_config(page_title="T Fragrances - Storefront & POS", page_icon="✨", layout="wide")
 
@@ -100,15 +75,22 @@ PRICE_PER_BOTTLE = 80.00
 LOCAL_BOTTLE_IMG = "images/bottles.png"
 LOCAL_QR_IMG = "images/zelle_qr.png"
 
-# --- SIDEBAR ACCESS INTERFACE ---
+# --- SIDEBAR ACCESS INTERFACE (SECURED & HIDDEN) ---
 st.sidebar.markdown("### 🔒 System Portal")
-access_mode = st.sidebar.radio("View Mode", ["🛍️ Public Storefront", "💼 Owner Dashboard"])
 
-if access_mode == "💼 Owner Dashboard":
-    password = st.sidebar.text_input("Enter Admin Password:", type="password")
-    if password != "tf80":
-        st.sidebar.error("Incorrect Password")
-        access_mode = "🛍️ Public Storefront"
+# Default view for regular users
+access_mode = "🛍️ Public Storefront"
+
+# Discreet login menu for you
+with st.sidebar.expander("Staff Portal"):
+    password = st.text_input("Enter Admin Password:", type="password", key="admin_password_input")
+
+# Only grant visibility to the Dashboard if password is correct
+if password == "tf80":
+    st.sidebar.success("Authenticated")
+    access_mode = st.sidebar.radio("View Mode", ["🛍️ Public Storefront", "💼 Owner Dashboard"])
+elif password:
+    st.sidebar.error("Incorrect Password")
 
 # ==========================================
 # PUBLIC VIEW: ONLINE STOREFRONT
@@ -305,4 +287,3 @@ else:
                 st.info("The business database log is empty.")
         except Exception:
             st.info("The business database log is empty.")
-
