@@ -184,8 +184,6 @@ if access_mode == "🛍️ Public Storefront":
                 st.success(f"🎉 Order Placed! ID: {st.session_state.last_order_id}")
                 st.markdown("### 💰 Scan or Use Info to Pay:")
                 st.markdown(f"""
-                ⚠️ **IMPORTANT:** Include your Order ID **`{st.session_state.last_order_id}`** in the Zelle memo note!
-                """)
                 Send your **${st.session_state.get('last_order_total', PRICE_PER_BOTTLE):.2f}** payment via **Zelle**:
                 * **Recipient Phone:** `863-236-4196`
                 * **Name:** Alexander Thompson
