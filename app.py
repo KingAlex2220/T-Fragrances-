@@ -105,94 +105,148 @@ elif password:
 # PUBLIC VIEW: ONLINE STOREFRONT
 # ==========================================
 if access_mode == "🛍️ Public Storefront":
-    st.subheader("🛍️ Place Your Order Online")
-    col_store_left, col_store_right = st.columns([3, 2])
     
-    with col_store_left:
-        with st.container(border=True):
-            st.markdown("#### 1. Select Your Line Segment")
-            cat_select = st.radio("Product Family:", ["Men's Premium Oils", "Women's Premium Oils", "Home & House Scents"], horizontal=True)
-            active_list = men_catalog if cat_select == "Men's Premium Oils" else (women_catalog if cat_select == "Women's Premium Oils" else home_catalog)
+    # Created top-level tabs for customers to toggle between shopping and tracking easily
+    store_tab, track_tab = st.tabs(["🛍️ Order Online", "📦 Track My Order"])
+    
+    with store_tab:
+        st.subheader("🛍️ Place Your Order Online")
+        col_store_left, col_store_right = st.columns([3, 2])
+        
+        with col_store_left:
+            with st.container(border=True):
+                st.markdown("#### 1. Select Your Line Segment")
+                cat_select = st.radio("Product Family:", ["Men's Premium Oils", "Women's Premium Oils", "Home & House Scents"], horizontal=True)
+                active_list = men_catalog if cat_select == "Men's Premium Oils" else (women_catalog if cat_select == "Women's Premium Oils" else home_catalog)
+                    
+                st.markdown("#### 2. Choose Your Scent & Size")
+                selected_display = st.selectbox("Available Inventory Index:", [item["label"] for item in active_list])
+                matching_obj = next(item for item in active_list if item["label"] == selected_display)
                 
-            st.markdown("#### 2. Choose Your Scent & Size")
-            selected_display = st.selectbox("Available Inventory Index:", [item["label"] for item in active_list])
-            matching_obj = next(item for item in active_list if item["label"] == selected_display)
-            
-            # Quantity input added here
-            web_qty = st.number_input("Select Quantity:", min_value=1, max_value=50, value=1, step=1, key="web_quantity_select")
-            
-            if os.path.exists(LOCAL_BOTTLE_IMG):
-                st.image(LOCAL_BOTTLE_IMG, caption=f"Signature Presentation Model — Featured Scent: {matching_obj['scent']}", use_container_width=True)
-            else:
-                st.info("💡 Image loading configuration pending sync.")
-            
-            st.markdown("#### 3. Shipping & Contact Information")
-            cust_name = st.text_input("Full Name:")
-            cust_phone = st.text_input("Phone Number:")
-            cust_address = st.text_area("Full Shipping / Delivery Address:", placeholder="Street, City, State, ZIP")
-            submit_order = st.button("Review Order Invoice", type="primary")
-            
-        if submit_order:
-            if not cust_name.strip() or not cust_phone.strip() or not cust_address.strip():
-                st.error("⚠️ Please fill out your Name, Phone Number, and Shipping Address.")
-            else:
-                st.session_state.web_cart = {
-                    "name": cust_name.strip(),
-                    "phone": cust_phone.strip(),
-                    "address": cust_address.strip(),
-                    "category": cat_select,
-                    "code": matching_obj["code"],
-                    "scent": matching_obj["scent"],
-                    "quantity": int(web_qty),
-                    "total": float(PRICE_PER_BOTTLE * web_qty)
-                }
+                # Quantity input added here
+                web_qty = st.number_input("Select Quantity:", min_value=1, max_value=50, value=1, step=1, key="web_quantity_select")
+                
+                if os.path.exists(LOCAL_BOTTLE_IMG):
+                    st.image(LOCAL_BOTTLE_IMG, caption=f"Signature Presentation Model — Featured Scent: {matching_obj['scent']}", use_container_width=True)
+                else:
+                    st.info("💡 Image loading configuration pending sync.")
+                
+                st.markdown("#### 3. Shipping & Contact Information")
+                cust_name = st.text_input("Full Name:")
+                cust_phone = st.text_input("Phone Number:")
+                cust_address = st.text_area("Full Shipping / Delivery Address:", placeholder="Street, City, State, ZIP")
+                submit_order = st.button("Review Order Invoice", type="primary")
+                
+            if submit_order:
+                if not cust_name.strip() or not cust_phone.strip() or not cust_address.strip():
+                    st.error("⚠️ Please fill out your Name, Phone Number, and Shipping Address.")
+                else:
+                    st.session_state.web_cart = {
+                        "name": cust_name.strip(),
+                        "phone": cust_phone.strip(),
+                        "address": cust_address.strip(),
+                        "category": cat_select,
+                        "code": matching_obj["code"],
+                        "scent": matching_obj["scent"],
+                        "quantity": int(web_qty),
+                        "total": float(PRICE_PER_BOTTLE * web_qty)
+                    }
 
-    with col_store_right:
-        st.markdown("#### 🧾 Order Invoice & Payment Breakdown")
-        if "web_cart" in st.session_state and st.session_state.web_cart is not None:
-            cart = st.session_state.web_cart
-            st.info("⚙️ **Invoice Generated Successfully**")
-            st.metric("Total Balance Due", f"${cart['total']:.2f}")
-            st.write(f"• **Purchaser:** {cart['name']}")
-            st.write(f"• **Phone:** {cart['phone']}")
-            st.write(f"• **Selection:** {cart['code']} - {cart['scent']}")
-            st.write(f"• **Quantity Ordered:** {cart['quantity']} bottle(s)")
-            
-            if st.button("Confirm & Place Order"):
-                generated_id = f"TF-WEB-{random.randint(1000, 9999)}"
-                timestamp_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        with col_store_right:
+            st.markdown("#### 🧾 Order Invoice & Payment Breakdown")
+            if "web_cart" in st.session_state and st.session_state.web_cart is not None:
+                cart = st.session_state.web_cart
+                st.info("⚙️ **Invoice Generated Successfully**")
+                st.metric("Total Balance Due", f"${cart['total']:.2f}")
+                st.write(f"• **Purchaser:** {cart['name']}")
+                st.write(f"• **Phone:** {cart['phone']}")
+                st.write(f"• **Selection:** {cart['code']} - {cart['scent']}")
+                st.write(f"• **Quantity Ordered:** {cart['quantity']} bottle(s)")
                 
-                conn = get_db_connection()
-                cursor = conn.cursor()
-                cursor.execute("""
-                    INSERT INTO orders_v2 (order_id, timestamp, customer_name, phone_number, delivery_address, category, product_code, scent_name, quantity, payment_method, total_paid, status, order_type)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """, (generated_id, timestamp_str, cart['name'], cart['phone'], cart['address'], cart['category'], cart['code'], cart['scent'], cart['quantity'], "Zelle Pending", cart['total'], "Awaiting Payment", "Online Store"))
-                conn.commit()
-                conn.close()
-                st.session_state.last_order_id = generated_id
-                st.session_state.last_order_total = cart['total']
-                st.session_state.web_cart = None
-                st.rerun()
+                if st.button("Confirm & Place Order"):
+                    generated_id = f"TF-WEB-{random.randint(1000, 9999)}"
+                    timestamp_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    
+                    conn = get_db_connection()
+                    cursor = conn.cursor()
+                    cursor.execute("""
+                        INSERT INTO orders_v2 (order_id, timestamp, customer_name, phone_number, delivery_address, category, product_code, scent_name, quantity, payment_method, total_paid, status, order_type)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """, (generated_id, timestamp_str, cart['name'], cart['phone'], cart['address'], cart['category'], cart['code'], cart['scent'], cart['quantity'], "Zelle Pending", cart['total'], "Awaiting Payment", "Online Store"))
+                    conn.commit()
+                    conn.close()
+                    st.session_state.last_order_id = generated_id
+                    st.session_state.last_order_total = cart['total']
+                    st.session_state.web_cart = None
+                    st.rerun()
+                    
+            elif "last_order_id" in st.session_state:
+                st.success(f"🎉 Order Placed! ID: {st.session_state.last_order_id}")
+                st.markdown("### 💰 Scan or Use Info to Pay:")
+                st.markdown(f"""
+                Send your **${st.session_state.get('last_order_total', PRICE_PER_BOTTLE):.2f}** payment via **Zelle**:
+                * **Recipient Phone:** `863-236-4196`
+                * **Name:** Alexander Thompson
                 
-        elif "last_order_id" in st.session_state:
-            st.success(f"🎉 Order Placed! ID: {st.session_state.last_order_id}")
-            st.markdown("### 💰 Scan or Use Info to Pay:")
-            st.markdown(f"""
-            Send your **${st.session_state.get('last_order_total', PRICE_PER_BOTTLE):.2f}** payment via **Zelle**:
-            * **Recipient Phone:** `863-236-4196`
-            * **Name:** Alexander Thompson
-            
-            ⚠️ **IMPORTANT:** Include your Order ID **`{st.session_state.last_order_id}`** in the Zelle memo note!
-            """)
-            if os.path.exists(LOCAL_QR_IMG):
-                st.image(LOCAL_QR_IMG, caption="Scan with your banking app to Zelle instantly", width=300)
-            if st.button("Place New Order"):
-                if "last_order_id" in st.session_state: del st.session_state.last_order_id
-                if "last_order_total" in st.session_state: del st.session_state.last_order_total
-                st.rerun()
-        else:
-            st.info("Select a scent and fill out details to view invoice configurations.")
+                ⚠️ **IMPORTANT:** Include your Order ID **`{st.session_state.last_order_id}`** in the Zelle memo note!
+                """)
+                if os.path.exists(LOCAL_QR_IMG):
+                    st.image(LOCAL_QR_IMG, caption="Scan with your banking app to Zelle instantly", width=300)
+                if st.button("Place New Order"):
+                    if "last_order_id" in st.session_state: del st.session_state.last_order_id
+                    if "last_order_total" in st.session_state: del st.session_state.last_order_total
+                    st.rerun()
+            else:
+                st.info("Select a scent and fill out details to view invoice configurations.")
+
+    # --- CUSTOMER TRACKING SECTION ---
+    with track_tab:
+        st.subheader("📦 Real-Time Order Tracking")
+        st.write("Enter your order tracking identification code (e.g., `TF-WEB-1234`) to check your current fulfillment status.")
+        
+        cust_query_id = st.text_input("Order ID:", placeholder="TF-WEB-XXXX", key="customer_track_id_input").strip()
+        
+        if st.button("Track Order", type="primary"):
+            if cust_query_id:
+                try:
+                    conn = get_db_connection()
+                    row = conn.execute("SELECT * FROM orders_v2 WHERE order_id = ?", (cust_query_id,)).fetchone()
+                    conn.close()
+                    
+                    if row:
+                        st.markdown("---")
+                        st.markdown(f"### Order Details for `{cust_query_id}`")
+                        
+                        # Style status indicators beautifully for the customer experience
+                        status_raw = row["status"]
+                        status_emoji = "⏳"
+                        status_color = "orange"
+                        
+                        if "Paid" in status_raw or "Processing" in status_raw:
+                            status_emoji = "📦"
+                            status_color = "blue"
+                        elif "Handed Over" in status_raw or "Completed" in status_raw or "Shipped" in status_raw:
+                            status_emoji = "✅"
+                            status_color = "green"
+                        elif "Cancel" in status_raw:
+                            status_emoji = "❌"
+                            status_color = "red"
+                            
+                        st.markdown(f"#### Status: :{status_color}[{status_emoji} {status_raw}]")
+                        
+                        col_details_1, col_details_2 = st.columns(2)
+                        with col_details_1:
+                            st.write(f"• **Customer:** {row['customer_name']}")
+                            st.write(f"• **Order Date:** {row['timestamp']}")
+                        with col_details_2:
+                            st.write(f"• **Scent:** {row['scent_name']} ({row['quantity']} bottle(s))")
+                            st.write(f"• **Total Value:** ${row['total_paid']:.2f}")
+                    else:
+                        st.error("Order ID not found. Please double-check your receipt or spelling verification.")
+                except Exception as e:
+                    st.error("An error occurred while connecting to the verification system.")
+            else:
+                st.warning("Please type in an Order ID first.")
 
 # ==========================================
 # PRIVATE VIEW: OWNER HUB & POS
