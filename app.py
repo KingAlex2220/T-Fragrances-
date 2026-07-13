@@ -400,3 +400,7 @@ st.markdown(
     unsafe_allow_html=True
 ) 
 
+# Copyright
+<p style='text-align: center; color: #64748B; font-size: 0.9rem; margin-top: 50px;'>
+    © 2026 T Fragrances. All Rights Reserved.
+</p>
