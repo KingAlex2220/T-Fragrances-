@@ -187,7 +187,7 @@ if access_mode == "🛍️ Public Storefront":
             """)
             if os.path.exists(LOCAL_QR_IMG):
                 st.image(LOCAL_QR_IMG, caption="Scan with your banking app to Zelle instantly", width=300)
-            if st.button("Clear Screen / Place New Order"):
+            if st.button("Place New Order"):
                 if "last_order_id" in st.session_state: del st.session_state.last_order_id
                 if "last_order_total" in st.session_state: del st.session_state.last_order_total
                 st.rerun()
