@@ -55,7 +55,7 @@ init_db()
 
 # --- EMBEDDED MASTER CATALOG ---
 men_catalog = [
-    {"code": "#48E", "label": "#48E | Impression of Creed - Aventus", "scent": "Aventus"},
+    {"code": "#48E", "label": "#48E | Impression of Creed - Aventus", "scent": "Impression of Aventus"},
     {"code": "#135G", "label": "#135G | Impression of Paco Rabanne - Invictus", "scent": "Invictus"},
     {"code": "#91", "label": "#91 | Impression of  Jimmy Choo - Man", "scent": "Man"},
     {"code": "#135A", "label": "#135A | Impression of Paco Rabanne - One Million", "scent": "One Million"},
