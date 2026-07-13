@@ -388,3 +388,15 @@ else:
                 st.info("The business database log is empty.")
         except Exception as e:
             st.info("The business database log is empty.")
+            # Disclaimer for the Fragrance Names
+st.markdown("---")
+st.markdown(
+    "<div style='font-size: 0.8rem; color: #64748B; text-align: justify; line-height: 1.4;'>"
+    "<strong>LEGAL DISCLAIMER:</strong> T Fragrances competes with the designer brands. It does not use their "
+    "fragrances and is not associated or affiliated in any way with the designer brands or their manufacturers. "
+    "All trademarks are the property of their respective owners. We use designer names solely for comparative "
+    "purposes to give customers an idea of the scent character and olfactory notes."
+    "</div>", 
+    unsafe_allow_html=True
+) 
+
