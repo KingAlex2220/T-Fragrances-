@@ -4,7 +4,6 @@ import random
 import datetime
 import os
 import pandas as pd
-from twilio.rest import Client
 
 # --- PAGE SETUP & BRANDING ---
 st.set_page_config(page_title="T Fragrances - Storefront & POS", page_icon="✨", layout="wide")
