@@ -13,10 +13,12 @@ st.markdown("<p style='text-align: center; font-style: italic; color: #64748B; f
 st.markdown("---")
 
 # --- DATA STORAGE SETUP ---
-DB_FILE = "t_fragrances.db"
+# Using an absolute path ensures the file persists in the current workspace folder
+DB_FILE = os.path.abspath("t_fragrances.db")
 
 def get_db_connection():
-    conn = sqlite3.connect(DB_FILE)
+    # check_same_thread=False prevents threading errors across user sessions in Streamlit
+    conn = sqlite3.connect(DB_FILE, check_same_thread=False)
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -39,10 +41,19 @@ def init_db():
             order_type TEXT
         )
     """)
+    
+    # Safely inject 'quantity' column if missing from older table versions
     try:
         cursor.execute("SELECT quantity FROM orders_v2 LIMIT 1")
     except sqlite3.OperationalError:
         cursor.execute("ALTER TABLE orders_v2 ADD COLUMN quantity INTEGER DEFAULT 1")
+    
+    # --- AUTOMATIC 30-DAY PURGE ROUTINE ---
+    # Calculates the cutoff timestamp (30 days ago)
+    cutoff_date = (datetime.datetime.now() - datetime.timedelta(days=30)).strftime("%Y-%m-%d %H:%M:%S")
+    # Deletes any orders that are strictly older than the 30-day cutoff window
+    cursor.execute("DELETE FROM orders_v2 WHERE timestamp < ?", (cutoff_date,))
+    
     conn.commit()
     conn.close()
 
@@ -96,7 +107,6 @@ elif password:
 # PUBLIC VIEW: ONLINE STOREFRONT & TRACKING
 # ==========================================
 if access_mode == "🛍️ Public Storefront":
-    # Split the storefront into two easy sections for customers
     public_tab_shop, public_tab_track = st.tabs(["🛍️ Shop Online", "📦 Track My Order"])
     
     with public_tab_shop:
@@ -192,7 +202,6 @@ if access_mode == "🛍️ Public Storefront":
             else:
                 st.info("Select a scent and fill out details to view invoice configurations.")
 
-    # --- CUSTOMER FULFILLMENT TRACKING INTERFACE ---
     with public_tab_track:
         st.subheader("📦 Real-Time Order Tracking Portal")
         st.write("Enter your order tracking code (e.g., `TF-WEB-1234`) below to verify your current fulfillment status.")
@@ -210,7 +219,6 @@ if access_mode == "🛍️ Public Storefront":
                         st.markdown("---")
                         st.markdown(f"### Order Details for **{row['order_id']}**")
                         
-                        # Set custom status badges and progress updates depending on the ledger entry
                         status_str = row["status"]
                         
                         if status_str == "Awaiting Payment":
@@ -226,14 +234,13 @@ if access_mode == "🛍️ Public Storefront":
                         else:
                             st.info(f"📋 Status: **{status_str}**")
                             
-                        # Show visual details breakdown to reassure customer
                         col1, col2, col3 = st.columns(3)
                         col1.metric("Items Ordered", f"{row['quantity']} Bottle(s)")
                         col2.metric("Total Paid Amount", f"${row['total_paid']:.2f}")
                         col3.write(f"**Item Description:**\n{row['product_code']} — {row['scent_name']}")
                         
                     else:
-                        st.error("❌ Invalid Tracking Code. Please verify your order number and try again.")
+                        st.error("❌ Invalid Tracking Code or order is older than 30 days.")
                 except Exception:
                     st.error("⚠️ System Error: Unable to query database records.")
             else:
