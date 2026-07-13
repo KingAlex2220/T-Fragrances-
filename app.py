@@ -261,7 +261,7 @@ else:
                 active_list = men_catalog if cat_select == "Men's Premium Oils" else (women_catalog if cat_select == "Women's Premium Oils" else home_catalog)
                 selected_display = st.selectbox("Search master index:", [item["label"] for item in active_list], key="pos_scent")
                 matching_obj = next(item for item in active_list if item["label"] == selected_display)
-                
+               
                 pos_qty = st.number_input("In-Person Quantity:", min_value=1, max_value=100, value=1, step=1, key="pos_qty_select")
                 
                 client_name = st.text_input("Walk-in Customer Name:", placeholder="Jane Doe")
@@ -388,14 +388,26 @@ else:
                 st.info("The business database log is empty.")
         except Exception as e:
             st.info("The business database log is empty.")
-            # Disclaimer for the Fragrance Names
+
+# --- GLOBAL FOOTER (LEGAL DISCLAIMER & COPYRIGHT) ---
 st.markdown("---")
 st.markdown(
-    "<div style='font-size: 0.8rem; color: #64748B; text-align: justify; line-height: 1.4;'>"
-    "<strong>LEGAL DISCLAIMER:</strong> T Fragrances competes with the designer brands. It does not use their "
-    "fragrances and is not associated or affiliated in any way with the designer brands or their manufacturers. "
-    "All trademarks are the property of their respective owners. We use designer names solely for comparative "
-    "purposes to give customers an idea of the scent character and olfactory notes."
-    "</div>", 
+    """
+    <div style='font-size: 0.8rem; color: #64748B; text-align: justify; line-height: 1.4; margin-bottom: 20px;'>
+    <strong>LEGAL DISCLAIMER:</strong> T Fragrances competes with the designer brands. It does not use their 
+    fragrances and is not associated or affiliated in any way with the designer brands or their manufacturers. 
+    All trademarks are the property of their respective owners. We use designer names solely for comparative 
+    purposes to give customers an idea of the scent character and olfactory notes.
+    </div>
+    """, 
     unsafe_allow_html=True
-) 
+)
+
+st.markdown(
+    """
+    <p style='text-align: center; color: #64748B; font-size: 0.9rem; margin-top: 10px;'>
+    © 2026 T Fragrances. All Rights Reserved.
+    </p>
+    """, 
+    unsafe_allow_html=True
+)
