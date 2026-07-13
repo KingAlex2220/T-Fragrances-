@@ -198,8 +198,7 @@ if access_mode == "🛍️ Public Storefront":
                     st.rerun()
             else:
                 st.info("Select a scent and fill out details to view invoice configurations.")
- ⚠️ **IMPORTANT:** Include your Order ID **`{st.session_state.last_order_id}`** in the Zelle memo note!
-                """)
+
     # --- CUSTOMER TRACKING SECTION ---
     with track_tab:
         st.subheader("📦 Real-Time Order Tracking")
