@@ -94,8 +94,8 @@ access_mode = "🛍️ Public Storefront"
 with st.sidebar.expander("Staff Portal", expanded=False):
     password = st.text_input("Enter Admin Password:", type="password", key="admin_password_input")
 
-# Only grant visibility to the Dashboard if password matches 'tf80'
-if password == "tf80":
+# Only grant visibility to the Dashboard if password matches 'Safe9uard-tf80'
+if password == "Safe9uard-tf80":
     st.sidebar.success("Authenticated")
     access_mode = st.sidebar.radio("View Mode", ["🛍️ Public Storefront", "💼 Owner Dashboard"])
 elif password:
