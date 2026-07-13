@@ -5,6 +5,31 @@ import datetime
 import os
 import pandas as pd
 
+#Page Security
+def check_password():
+    """Returns True if the user had the correct password."""
+    def password_entered():
+        if st.sidebar.text_input("Owner PIN", type="password") == "2220":
+            st.session_state["password_correct"] = True
+        else:
+            st.session_state["password_correct"] = False
+
+    if "password_correct" not in st.session_state:
+        # First run, show input
+        st.sidebar.text_input("Owner PIN", type="password", on_change=password_entered, key="password_input")
+        return False
+    elif not st.session_state["password_correct"]:
+        # Password not correct, show input again
+        st.sidebar.text_input("Owner PIN", type="password", on_change=password_entered, key="password_input")
+        return False
+    else:
+        # Password correct, show content
+        return True
+
+# Now, add this one line to call the gatekeeper:
+if not check_password():
+    st.stop()  # This prevents the rest of the app from running
+    
 # --- PAGE SETUP & BRANDING ---
 st.set_page_config(page_title="T Fragrances - Storefront & POS", page_icon="✨", layout="wide")
 
