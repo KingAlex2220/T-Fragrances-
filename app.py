@@ -24,7 +24,7 @@ def init_db():
     conn = get_db_connection()
     cursor = conn.cursor()
     
-    # 1. Create the main database ledger with audit tracking capabilities
+    # Base schema matching initial logic
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS orders_v2 (
             order_id TEXT PRIMARY KEY,
@@ -38,26 +38,9 @@ def init_db():
             payment_method TEXT,
             total_paid REAL,
             status TEXT,
-            order_type TEXT,
-            audit_logged_date TEXT DEFAULT CURRENT_DATE
+            order_type TEXT
         )
     """)
-    
-    # 2. OPTIONAL AUTOMATED HOUSKEEPING FOR RETENTION (Safeguard)
-    # This automatically safely purges records ONLY if they are older than 30 days
-    # If you want to keep them permanently but just flag them, you can remove this execute line.
-    try:
-        # Deletes records where the timestamp is older than 30 days ago
-        cursor.execute("""
-            DELETE FROM orders_v2 
-            WHERE status IN ('✨ Completed', 'Cancelled') 
-            AND datetime(timestamp) < datetime('now', '-30 days')
-        """)
-    except Exception as e:
-        pass # Prevents the app from crashing if time strings are manually modified
-        
-    conn.commit()
-    conn.close()
     
     # Dynamic schema migration to safely inject 'quantity' column if missing
     try:
