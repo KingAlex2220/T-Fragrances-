@@ -186,10 +186,10 @@ if access_mode == "🛍️ Public Storefront":
                 * **Recipient Phone:** `863-236-4196`
                 * **Name:** Alexander Thompson
                 
-                ⚠️ **IMPORTANT:** Include your Order ID **`{st.session_state.last_order_id}`** in the Zelle memo note! Please keep a copy/screenshot of your tracking number!
+                ⚠️ **IMPORTANT:** Include your Order ID **`{st.session_state.last_order_id}`** in the Zelle memo note! ⚠️Please keep a copy/screenshot of your tracking number!
                 """)
                 if os.path.exists(LOCAL_QR_IMG):
-                    st.image(LOCAL_QR_IMG, caption="Scan with your banking app to Zelle instantly. Please keep a copy/screenshot of your tracking number!", width=300)
+                    st.image(LOCAL_QR_IMG, caption="Scan with your banking app to Zelle instantly. ⚠️ Please keep a copy/screenshot of your tracking number!", width=300)
                 if st.button("Place New Order"):
                     if "last_order_id" in st.session_state: del st.session_state.last_order_id
                     if "last_order_total" in st.session_state: del st.session_state.last_order_total
