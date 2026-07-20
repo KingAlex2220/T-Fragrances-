@@ -49,7 +49,7 @@ home_catalog = [
 ]
 
 ALL_CATALOG_ITEMS = men_catalog + women_catalog + home_catalog
-DEFAULT_INITIAL_STOCK = 20
+DEFAULT_INITIAL_STOCK = 4
 PRICE_PER_BOTTLE = 80.00
 LOCAL_BOTTLE_IMG = "images/bottles.png"
 LOCAL_QR_IMG = "images/zelle_qr.png"
