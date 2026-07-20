@@ -688,7 +688,7 @@ st.markdown(
 st.markdown(
     """
     <p style='text-align: center; color: #FFFFFF; font-size: 0.9rem; margin-top: 10px;'>
-    © 2026 T Fragrances. All Rights Reserved.
+    © T Fragrances. All Rights Reserved.
     </p>
     """, 
     unsafe_allow_html=True
