@@ -82,8 +82,8 @@ def init_db():
             product_code TEXT PRIMARY KEY,
             category TEXT,
             scent_name TEXT,
-            stock_quantity INTEGER DEFAULT 20,
-            initial_capacity INTEGER DEFAULT 20
+            stock_quantity INTEGER DEFAULT 4,
+            initial_capacity INTEGER DEFAULT 4
         )
     """)
     
