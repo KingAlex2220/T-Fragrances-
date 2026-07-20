@@ -20,6 +20,37 @@ def get_db_connection():
     conn.row_factory = sqlite3.Row
     return conn
 
+# --- EMBEDDED MASTER CATALOG ---
+men_catalog = [
+    {"code": "#48E", "label": "#48E | Impression of Creed - Aventus", "scent": "Impression of Aventus", "category": "Men's Premium Oils"},
+    {"code": "#135G", "label": "#135G | Impression of Paco Rabanne - Invictus", "scent": "Impression of Invictus", "category": "Men's Premium Oils"},
+    {"code": "#91", "label": "#91 | Impression of Jimmy Choo - Man", "scent": "Impression of Man", "category": "Men's Premium Oils"},
+    {"code": "#135A", "label": "#135A | Impression of Paco Rabanne - One Million", "scent": "Impression of One Million", "category": "Men's Premium Oils"},
+    {"code": "#53B", "label": "#53B | Impression of Dolce & Gabbana - Light Blue", "scent": "Impression of Light Blue", "category": "Men's Premium Oils"},
+    {"code": "#53G", "label": "#53G | Impression of Dolce & Gabbana - King", "scent": "Impression of King", "category": "Men's Premium Oils"},
+    {"code": "#168J", "label": "#168J | Impression of YSL - Myself Absolute", "scent": "Impression of Myself Absolute", "category": "Men's Premium Oils"},
+    {"code": "#18G", "label": "#18G | Impression of Armani - Armani Code", "scent": "Impression of Armani Code", "category": "Men's Premium Oils"},
+    {"code": "#15A", "label": "#15A | Impression of Maison Francis Kurkdjian - Baccarat 540", "scent": "Impression of Baccarat 540", "category": "Men's Premium Oils"},
+    {"code": "#43B", "label": "#43B | Impression of Christian Dior - Sauvage", "scent": "Impression of Sauvage", "category": "Men's Premium Oils"}
+]
+
+women_catalog = [
+    {"code": "#15A", "label": "#15A | Impression of Baccarat - Rouge 540", "scent": "Impression of Rouge 540", "category": "Women's Premium Oils"},
+    {"code": "#16", "label": "#16 | Impression of Chanel - Coco Mademoiselle", "scent": "Impression of Coco Mademoiselle", "category": "Women's Premium Oils"},
+    {"code": "#17", "label": "#17 | Impression of Dior - Miss Dior", "scent": "Impression of Miss Dior", "category": "Women's Premium Oils"},
+    {"code": "#21A", "label": "#21A | Impression of Chanel - Chance", "scent": "Impression of Chance", "category": "Women's Premium Oils"}
+]
+
+home_catalog = [
+    {"code": "H#1", "label": "H#1 | House Blend - Laundry day", "scent": "Laundry day", "category": "Home & House Scents"},
+    {"code": "H#2", "label": "H#2 | House Blend - Gain", "scent": "Gain", "category": "Home & House Scents"},
+    {"code": "H#3", "label": "H#3 | House Blend - Apple Blossom", "scent": "Apple Blossom", "category": "Home & House Scents"}
+]
+
+ALL_CATALOG_ITEMS = men_catalog + women_catalog + home_catalog
+
+DEFAULT_INITIAL_STOCK = 20  # Baseline stock capacity for 100% calculation
+
 def init_db():
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -47,38 +78,52 @@ def init_db():
         cursor.execute("SELECT quantity FROM orders_v2 LIMIT 1")
     except sqlite3.OperationalError:
         cursor.execute("ALTER TABLE orders_v2 ADD COLUMN quantity INTEGER DEFAULT 1")
+
+    # Inventory Table Creation
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS inventory (
+            product_code TEXT PRIMARY KEY,
+            category TEXT,
+            scent_name TEXT,
+            stock_quantity INTEGER DEFAULT 20,
+            initial_capacity INTEGER DEFAULT 20
+        )
+    """)
+    
+    # Populate inventory defaults if empty
+    for item in ALL_CATALOG_ITEMS:
+        cursor.execute("""
+            INSERT OR IGNORE INTO inventory (product_code, category, scent_name, stock_quantity, initial_capacity)
+            VALUES (?, ?, ?, ?, ?)
+        """, (item["code"], item["category"], item["scent"], DEFAULT_INITIAL_STOCK, DEFAULT_INITIAL_STOCK))
         
     conn.commit()
     conn.close()
 
 init_db()
 
-# --- EMBEDDED MASTER CATALOG ---
-men_catalog = [
-    {"code": "#48E", "label": "#48E | Impression of Creed - Aventus", "scent": "Impression of Aventus"},
-    {"code": "#135G", "label": "#135G | Impression of Paco Rabanne - Invictus", "scent": "Impression of Invictus"},
-    {"code": "#91", "label": "#91 | Impression of  Jimmy Choo - Man", "scent": "Impression of Man"},
-    {"code": "#135A", "label": "#135A | Impression of Paco Rabanne - One Million", "scent": "Impression of One Million"},
-    {"code": "#53B", "label": "#53B | Impression of Dolce & Gabbana - Light Blue", "scent": "Impression of Light Blue"},
-    {"code": "#53G", "label": "#53G | Impression of Dolce & Gabbana - King", "scent": "Impression of King"},
-    {"code": "#168J", "label": "#168J | Impression of YSL - Myself Absolute", "scent": "Impression of Myself Absolute"},
-    {"code": "#18G", "label": "#18G | Impression of Armani - Armani Code", "scent": "Impression of Armani Code"},
-    {"code": "#15A", "label": "#15A | Impression of Maison Francis Kurkdjian - Baccarat 540", "scent": "Impression of Baccarat 540"},
-    {"code": "#43B", "label": "#43B | Impression of Christian Dior - Sauvage", "scent": "Impression of Sauvage"}
-]
+# --- HELPER INVENTORY FUNCTIONS ---
+def get_item_stock(product_code):
+    conn = get_db_connection()
+    row = conn.execute("SELECT stock_quantity, initial_capacity FROM inventory WHERE product_code = ?", (product_code,)).fetchone()
+    conn.close()
+    if row:
+        return row["stock_quantity"], row["initial_capacity"]
+    return DEFAULT_INITIAL_STOCK, DEFAULT_INITIAL_STOCK
 
-women_catalog = [
-    {"code": "#15A", "label": "#15A | Impression of Baccarat - Rouge 540", "scent": "Impression of Rouge 540"},
-    {"code": "#16", "label": "#16 | Impression of Chanel - Coco Mademoiselle", "scent": "Impression of Coco Mademoiselle"},
-    {"code": "#17", "label": "#17 | Impression of Dior - Miss Dior", "scent": "Impression of Miss Dior"},
-    {"code": "#21A", "label": "#21A | Impression of Chanel - Chance", "scent": "Impression of Chance"}
-]
+def deduct_inventory(product_code, qty):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE inventory SET stock_quantity = MAX(0, stock_quantity - ?) WHERE product_code = ?", (qty, product_code))
+    conn.commit()
+    conn.close()
 
-home_catalog = [
-    {"code": "H#1", "label": "H#1 | House Blend - Laundry day", "scent": "Laundry day"},
-    {"code": "H#2", "label": "H#2 | House Blend - Gain", "scent": "Gain"},
-    {"code": "H#3", "label": "H#3 | House Blend - Apple Blossom", "scent": "Apple Blossom"}
-]
+def restock_item(product_code, add_qty):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE inventory SET stock_quantity = stock_quantity + ? WHERE product_code = ?", (add_qty, product_code))
+    conn.commit()
+    conn.close()
 
 PRICE_PER_BOTTLE = 80.00
 LOCAL_BOTTLE_IMG = "images/bottles.png"
@@ -121,8 +166,19 @@ if access_mode == "🛍️ Public Storefront":
                 selected_display = st.selectbox("Available Inventory Index:", [item["label"] for item in active_list])
                 matching_obj = next(item for item in active_list if item["label"] == selected_display)
                 
+                # Check current stock level
+                current_stock, initial_cap = get_item_stock(matching_obj["code"])
+                
+                if current_stock <= 0:
+                    st.error("🚫 Currently Out of Stock! Please check back later.")
+                elif current_stock <= (initial_cap * 0.5):
+                    st.warning(f"⚠️ Limited Stock Remaining! (Only {current_stock} left)")
+                else:
+                    st.caption(f"In Stock ({current_stock} available)")
+
                 # Quantity input added here
-                web_qty = st.number_input("Select Quantity:", min_value=1, max_value=50, value=1, step=1, key="web_quantity_select")
+                max_selectable = max(1, current_stock)
+                web_qty = st.number_input("Select Quantity:", min_value=1, max_value=max_selectable, value=1, step=1, key="web_quantity_select", disabled=(current_stock <= 0))
                 
                 if os.path.exists(LOCAL_BOTTLE_IMG):
                     st.image(LOCAL_BOTTLE_IMG, caption=f"Signature Presentation Model — Featured Scent: {matching_obj['scent']}", use_container_width=True)
@@ -133,7 +189,7 @@ if access_mode == "🛍️ Public Storefront":
                 cust_name = st.text_input("Full Name:")
                 cust_phone = st.text_input("Phone Number:")
                 cust_address = st.text_area("Full Shipping / Delivery Address:", placeholder="Street, City, State, ZIP")
-                submit_order = st.button("Review Order Invoice", type="primary")
+                submit_order = st.button("Review Order Invoice", type="primary", disabled=(current_stock <= 0))
                 
             if submit_order:
                 if not cust_name.strip() or not cust_phone.strip() or not cust_address.strip():
@@ -165,6 +221,7 @@ if access_mode == "🛍️ Public Storefront":
                     generated_id = f"TF-WEB-{random.randint(1000, 9999)}"
                     timestamp_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                     
+                    # Record Order in DB
                     conn = get_db_connection()
                     cursor = conn.cursor()
                     cursor.execute("""
@@ -173,6 +230,10 @@ if access_mode == "🛍️ Public Storefront":
                     """, (generated_id, timestamp_str, cart['name'], cart['phone'], cart['address'], cart['category'], cart['code'], cart['scent'], cart['quantity'], "Zelle Pending", cart['total'], "Awaiting Payment", "Online Store"))
                     conn.commit()
                     conn.close()
+                    
+                    # Deduct from stock
+                    deduct_inventory(cart['code'], cart['quantity'])
+                    
                     st.session_state.last_order_id = generated_id
                     st.session_state.last_order_total = cart['total']
                     st.session_state.web_cart = None
@@ -250,7 +311,29 @@ if access_mode == "🛍️ Public Storefront":
 # ==========================================
 else:
     st.subheader("💼 Master Business Operations Hub")
-    tab_pos, tab_web_orders, tab_track, tab_ops = st.tabs(["🛒 In-Person POS Terminal", "📬 Pending Web Orders", "📦 Order Lookup", "🛡️ Master Database Ledger"])
+    
+    # --- AUTOMATED SYSTEM LOW-STOCK NOTIFICATIONS ---
+    conn = get_db_connection()
+    low_stock_df = pd.read_sql_query("SELECT product_code, category, scent_name, stock_quantity, initial_capacity FROM inventory WHERE stock_quantity <= (initial_capacity * 0.5)", conn)
+    conn.close()
+
+    if not low_stock_df.empty:
+        st.warning("⚠️ **AUTOMATED INVENTORY ALERT: LOW STOCK DETECTED!**")
+        for idx, row in low_stock_df.iterrows():
+            if row["stock_quantity"] == 0:
+                st.error(f"🚨 **{row['product_code']} - {row['scent_name']}** ({row['category']}): **OUT OF STOCK** (0 Units Remaining)")
+            else:
+                pct = int((row["stock_quantity"] / row["initial_capacity"]) * 100)
+                st.write(f"⚠️ **{row['product_code']} - {row['scent_name']}** ({row['category']}): **{row['stock_quantity']} units left** ({pct}% of capacity)")
+        st.markdown("---")
+
+    tab_pos, tab_inventory, tab_web_orders, tab_track, tab_ops = st.tabs([
+        "🛒 In-Person POS Terminal", 
+        "📦 Inventory Tracker", 
+        "📬 Pending Web Orders", 
+        "📦 Order Lookup", 
+        "🛡️ Master Database Ledger"
+    ])
     
     with tab_pos:
         st.markdown("### Hand-to-Hand Retail Register")
@@ -261,12 +344,20 @@ else:
                 active_list = men_catalog if cat_select == "Men's Premium Oils" else (women_catalog if cat_select == "Women's Premium Oils" else home_catalog)
                 selected_display = st.selectbox("Search master index:", [item["label"] for item in active_list], key="pos_scent")
                 matching_obj = next(item for item in active_list if item["label"] == selected_display)
-               
-                pos_qty = st.number_input("In-Person Quantity:", min_value=1, max_value=100, value=1, step=1, key="pos_qty_select")
+                
+                current_stock, initial_cap = get_item_stock(matching_obj["code"])
+                
+                if current_stock <= 0:
+                    st.error("🚨 Item is Out of Stock!")
+                elif current_stock <= (initial_cap * 0.5):
+                    st.warning(f"⚠️ Low Stock Alert: Only {current_stock} left")
+
+                max_pos = max(1, current_stock)
+                pos_qty = st.number_input("In-Person Quantity:", min_value=1, max_value=max_pos, value=1, step=1, key="pos_qty_select", disabled=(current_stock <= 0))
                 
                 client_name = st.text_input("Walk-in Customer Name:", placeholder="Jane Doe")
                 payment_vector = st.selectbox("Settlement Channel:", ["Cash", "Zelle Scan", "Apple Pay", "Venmo", "Cash App"])
-                generate_click = st.button("Process Live Checkout Configuration")
+                generate_click = st.button("Process Live Checkout Configuration", disabled=(current_stock <= 0))
                 
             if generate_click:
                 if not client_name.strip():
@@ -301,11 +392,43 @@ else:
                     """, (generated_id, timestamp_str, cart['client'], 'N/A', 'In-Person Sale', cart['category'], cart['code'], cart['scent'], cart['quantity'], cart['vector'], cart['price'], "Completed & Handed Over", "POS Register"))
                     conn.commit()
                     conn.close()
+                    
+                    # Deduct from inventory stock
+                    deduct_inventory(cart['code'], cart['quantity'])
+                    
                     st.success(f"Transaction Recorded! Code: {generated_id}")
                     st.balloons()
                     st.session_state.pos_cart = None
+                    st.rerun()
             else:
                 st.info("POS Terminal completely clear and ready.")
+
+    # --- TAB: REAL-TIME INVENTORY TRACKER & RESTOCK PORTAL ---
+    with tab_inventory:
+        st.markdown("### 📦 Inventory Stock Levels & Restock Portal")
+        conn = get_db_connection()
+        inv_df = pd.read_sql_query("SELECT product_code AS Code, category AS Category, scent_name AS Scent, stock_quantity AS 'Stock Left', initial_capacity AS Capacity FROM inventory", conn)
+        conn.close()
+        
+        inv_df["Stock Level (%)"] = (inv_df["Stock Left"] / inv_df["Capacity"] * 100).round(1).astype(str) + "%"
+        
+        st.dataframe(inv_df, use_container_width=True)
+        
+        st.markdown("---")
+        st.markdown("#### 🔄 Inventory Restock Tool")
+        col_r1, col_r2, col_r3 = st.columns([2, 1, 1])
+        with col_r1:
+            item_to_restock = st.selectbox("Select Scent to Restock:", [f"{item['code']} - {item['scent']}" for item in ALL_CATALOG_ITEMS])
+        with col_r2:
+            add_amount = st.number_input("Quantity to Add:", min_value=1, max_value=500, value=10, step=1)
+        with col_r3:
+            st.write(" ")
+            st.write(" ")
+            if st.button("Update Stock"):
+                target_code = item_to_restock.split(" - ")[0]
+                restock_item(target_code, int(add_amount))
+                st.success(f"Added {add_amount} units to {target_code}!")
+                st.rerun()
 
     with tab_web_orders:
         st.markdown("### Online Orders Awaiting Verification")
@@ -358,7 +481,7 @@ else:
             conn.close()
             
             if not df_orders.empty:
-                # --- NEW: 30-DAY TIMEFRAME CALCULATOR ---
+                # --- 30-DAY TIMEFRAME CALCULATOR ---
                 df_orders['parsed_time'] = pd.to_datetime(df_orders['timestamp'], format="%Y-%m-%d %H:%M:%S", errors='coerce')
                 
                 thirty_days_ago = datetime.datetime.now() - datetime.timedelta(days=30)
@@ -379,7 +502,6 @@ else:
                 show_only_30_days = st.checkbox("📅 Filter Matrix Ledger view to past 30 days only", value=False)
                 
                 display_df = df_30_days if show_only_30_days else df_orders
-                # Drop intermediate parsed column before showcasing table matrix
                 if 'parsed_time' in display_df.columns:
                     display_df = display_df.drop(columns=['parsed_time'])
                     
