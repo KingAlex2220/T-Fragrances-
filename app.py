@@ -377,12 +377,14 @@ if access_mode == "🛍️ Public Storefront":
                                     st.write(f"• **Scent:** {row['scent_name']} ({row['quantity']} bottle(s))")
                                     st.write(f"• **Settlement Channel:** {row['payment_method']}")
                                     st.write(f"• **Total Value:** ${row['total_paid']:.2f}")
-                                    if row.get("is_preorder", 0) == 1:
+                                    
+                                    # Safely check if is_preorder column exists in keys
+                                    if "is_preorder" in row.keys() and row["is_preorder"] == 1:
                                         st.info("⭐ Prioritized Preorder Status Confirmed")
                     else:
                         st.error("No orders found matching that Order ID or Phone Number. Please check your spelling and try again.")
                 except Exception as e:
-                    st.error("An error occurred while connecting to the verification system.")
+                    st.error(f"An error occurred while connecting to the verification system: {e}")
             else:
                 st.warning("Please type in an Order ID or Phone Number first.")
 
