@@ -49,7 +49,7 @@ home_catalog = [
 
 ALL_CATALOG_ITEMS = men_catalog + women_catalog + home_catalog
 
-DEFAULT_INITIAL_STOCK = 4  # Baseline stock capacity for 100% calculation
+DEFAULT_INITIAL_STOCK = 20  # Baseline stock capacity for 100% calculation
 
 def init_db():
     conn = get_db_connection()
@@ -196,6 +196,13 @@ if access_mode == "🛍️ Public Storefront":
                 cust_phone = st.text_input("Phone Number:")
                 cust_address = st.text_area("Full Shipping / Delivery Address:", placeholder="Street, City, State, ZIP")
                 
+                st.markdown("#### 4. Select Settlement Channel")
+                payment_method = st.selectbox(
+                    "Payment / Settlement Channel:",
+                    ["Zelle", "Cash App", "Venmo", "Apple Pay / Text Payment"],
+                    help="Choose your preferred payment method to view settlement details."
+                )
+                
                 button_label = "Review Priority Preorder Invoice" if is_preorder_item else "Review Order Invoice"
                 submit_order = st.button(button_label, type="primary")
                 
@@ -212,6 +219,7 @@ if access_mode == "🛍️ Public Storefront":
                         "scent": matching_obj["scent"],
                         "quantity": int(web_qty),
                         "total": float(PRICE_PER_BOTTLE * web_qty),
+                        "payment_method": payment_method,
                         "is_preorder": 1 if is_preorder_item else 0
                     }
 
@@ -229,6 +237,7 @@ if access_mode == "🛍️ Public Storefront":
                 st.write(f"• **Phone:** {cart['phone']}")
                 st.write(f"• **Selection:** {cart['code']} - {cart['scent']}")
                 st.write(f"• **Quantity Ordered:** {cart['quantity']} bottle(s)")
+                st.write(f"• **Settlement Channel:** {cart['payment_method']}")
                 st.write(f"• **Order Type:** {'Priority Preorder' if cart.get('is_preorder') == 1 else 'Standard In-Stock'}")
                 
                 confirm_label = "Confirm & Place Priority Preorder" if cart.get("is_preorder") == 1 else "Confirm & Place Order"
@@ -236,7 +245,7 @@ if access_mode == "🛍️ Public Storefront":
                     generated_id = f"TF-WEB-{random.randint(1000, 9999)}"
                     timestamp_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                     
-                    initial_status = "Preorder - Awaiting Batch Restock" if cart.get("is_preorder") == 1 else "Awaiting Payment"
+                    initial_status = "Preorder - Awaiting Batch Restock" if cart.get("is_preorder", 0) == 1 else f"Awaiting Payment ({cart['payment_method']})"
                     
                     # Record Order in DB
                     conn = get_db_connection()
@@ -244,7 +253,7 @@ if access_mode == "🛍️ Public Storefront":
                     cursor.execute("""
                         INSERT INTO orders_v2 (order_id, timestamp, customer_name, phone_number, delivery_address, category, product_code, scent_name, quantity, payment_method, total_paid, status, order_type, is_preorder)
                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """, (generated_id, timestamp_str, cart['name'], cart['phone'], cart['address'], cart['category'], cart['code'], cart['scent'], cart['quantity'], "Zelle Pending", cart['total'], initial_status, "Online Store", cart.get("is_preorder", 0)))
+                    """, (generated_id, timestamp_str, cart['name'], cart['phone'], cart['address'], cart['category'], cart['code'], cart['scent'], cart['quantity'], cart['payment_method'], cart['total'], initial_status, "Online Store", cart.get("is_preorder", 0)))
                     conn.commit()
                     conn.close()
                     
@@ -254,6 +263,7 @@ if access_mode == "🛍️ Public Storefront":
                     
                     st.session_state.last_order_id = generated_id
                     st.session_state.last_order_total = cart['total']
+                    st.session_state.last_order_method = cart['payment_method']
                     st.session_state.last_order_preorder = cart.get("is_preorder", 0)
                     st.session_state.web_cart = None
                     st.rerun()
@@ -264,20 +274,46 @@ if access_mode == "🛍️ Public Storefront":
                 else:
                     st.success(f"🎉 Order Placed! ID: {st.session_state.last_order_id}")
                     
-                st.markdown("### 💰 Scan or Use Info to Pay:")
-                st.markdown(f"""
-                Send your **${st.session_state.get('last_order_total', PRICE_PER_BOTTLE):.2f}** payment via **Zelle**:
-                * **Recipient Phone:** `863-236-4196`
-                * **Name:** Alexander Thompson
+                selected_method = st.session_state.get('last_order_method', 'Zelle')
+                order_total = st.session_state.get('last_order_total', PRICE_PER_BOTTLE)
+                order_id = st.session_state.last_order_id
                 
-                ⚠️ **IMPORTANT:** Include your Order ID **`{st.session_state.last_order_id}`** in the Zelle memo note! 
-                ⚠️ Please keep a copy/screenshot of your tracking number!
-                """)
-                if os.path.exists(LOCAL_QR_IMG):
-                    st.image(LOCAL_QR_IMG, caption="Scan with your banking app to Zelle instantly. ⚠️ Please keep a copy/screenshot of your tracking number!", width=300)
+                st.markdown(f"### 💰 Send Payment via **{selected_method}**:")
+                
+                if selected_method == "Zelle":
+                    st.markdown(f"""
+                    Send **${order_total:.2f}** via **Zelle**:
+                    * **Recipient Phone:** `863-236-4196`
+                    * **Name:** Alexander Thompson
+                    """)
+                    if os.path.exists(LOCAL_QR_IMG):
+                        st.image(LOCAL_QR_IMG, caption="Scan with your banking app to Zelle instantly.", width=300)
+                elif selected_method == "Cash App":
+                    st.markdown(f"""
+                    Send **${order_total:.2f}** via **Cash App**:
+                    * **Cash Tag:** `$TFragrances`
+                    * **Phone:** `863-236-4196`
+                    """)
+                elif selected_method == "Venmo":
+                    st.markdown(f"""
+                    Send **${order_total:.2f}** via **Venmo**:
+                    * **Username:** `@TFragrances`
+                    * **Phone Verification (Last 4):** `4196`
+                    """)
+                else:  # Apple Pay / Text
+                    st.markdown(f"""
+                    Send **${order_total:.2f}** via **Apple Pay**:
+                    * **Send to Phone:** `863-236-4196`
+                    * **Note / Message:** Include your Order ID `{order_id}` in the text!
+                    """)
+                
+                st.warning(f"⚠️ **IMPORTANT:** Always include your Order ID **`{order_id}`** in the payment note/memo!")
+                st.caption("Please screenshot/save this tracking page for your records.")
+                
                 if st.button("Place New Order"):
                     if "last_order_id" in st.session_state: del st.session_state.last_order_id
                     if "last_order_total" in st.session_state: del st.session_state.last_order_total
+                    if "last_order_method" in st.session_state: del st.session_state.last_order_method
                     if "last_order_preorder" in st.session_state: del st.session_state.last_order_preorder
                     st.rerun()
             else:
@@ -323,6 +359,7 @@ if access_mode == "🛍️ Public Storefront":
                         with col_details_1:
                             st.write(f"• **Customer:** {row['customer_name']}")
                             st.write(f"• **Order Date:** {row['timestamp']}")
+                            st.write(f"• **Settlement Channel:** {row['payment_method']}")
                         with col_details_2:
                             st.write(f"• **Scent:** {row['scent_name']} ({row['quantity']} bottle(s))")
                             st.write(f"• **Total Value:** ${row['total_paid']:.2f}")
@@ -377,7 +414,7 @@ else:
         st.caption("Preorders take top priority. Fulfill these first as fresh batches are restocked.")
         
         conn = get_db_connection()
-        preorders_df = pd.read_sql_query("SELECT order_id, timestamp, customer_name, phone_number, delivery_address, product_code, scent_name, quantity, total_paid, status FROM orders_v2 WHERE is_preorder = 1 ORDER BY timestamp ASC", conn)
+        preorders_df = pd.read_sql_query("SELECT order_id, timestamp, customer_name, phone_number, delivery_address, product_code, scent_name, quantity, payment_method, total_paid, status FROM orders_v2 WHERE is_preorder = 1 ORDER BY timestamp ASC", conn)
         conn.close()
         
         if preorders_df.empty:
@@ -431,7 +468,7 @@ else:
                 pos_qty = st.number_input("In-Person Quantity:", min_value=1, max_value=max_pos, value=1, step=1, key="pos_qty_select")
                 
                 client_name = st.text_input("Walk-in Customer Name:", placeholder="Jane Doe")
-                payment_vector = st.selectbox("Settlement Channel:", ["Cash", "Zelle Scan", "Apple Pay", "Venmo", "Cash App"])
+                payment_vector = st.selectbox("Settlement Channel:", ["Cash", "Zelle", "Cash App", "Venmo", "Apple Pay"])
                 generate_click = st.button("Process Live Checkout Configuration")
                 
             if generate_click:
@@ -516,7 +553,7 @@ else:
         st.markdown("### Online Orders Awaiting Verification")
         try:
             conn = get_db_connection()
-            pending_df = pd.read_sql_query("SELECT order_id, timestamp, customer_name, phone_number, product_code, scent_name, quantity, total_paid, status, is_preorder FROM orders_v2 WHERE order_type = 'Online Store' AND (status = 'Awaiting Payment' OR status LIKE '%Preorder%')", conn)
+            pending_df = pd.read_sql_query("SELECT order_id, timestamp, customer_name, phone_number, product_code, scent_name, quantity, payment_method, total_paid, status, is_preorder FROM orders_v2 WHERE order_type = 'Online Store' AND (status LIKE 'Awaiting Payment%' OR status LIKE '%Preorder%')", conn)
             conn.close()
             if pending_df.empty:
                 st.success("No pending web orders require attention.")
@@ -555,6 +592,7 @@ else:
                     if row:
                         st.markdown(f"### Update Diagnostic: Order Found ✅")
                         st.metric("Fulfillment Processing Status", row["status"])
+                        st.write(f"• **Channel:** {row['payment_method']}")
                         st.write(f"• **Quantity:** {row['quantity']} Unit(s) — **Total:** ${row['total_paid']:.2f}")
                         if row.get("is_preorder", 0) == 1:
                             st.info("⭐ Prioritized Preorder Status Flag Active")
