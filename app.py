@@ -321,56 +321,70 @@ if access_mode == "🛍️ Public Storefront":
 
     with track_tab:
         st.subheader("📦 Real-Time Order Tracking")
-        st.write("Enter your order tracking identification code (e.g., `TF-WEB-1234`) to check your current fulfillment status.")
+        st.write("Enter your **Order ID** (e.g., `TF-WEB-1234`) or **Phone Number** to check your order status.")
         
-        cust_query_id = st.text_input("Order ID:", placeholder="TF-WEB-XXXX", key="customer_track_id_input").strip()
+        cust_query_input = st.text_input("Order ID or Phone Number:", placeholder="TF-WEB-1234 or 863-555-0199", key="customer_track_input").strip()
         
         if st.button("Track Order", type="primary"):
-            if cust_query_id:
+            if cust_query_input:
                 try:
                     conn = get_db_connection()
-                    row = conn.execute("SELECT * FROM orders_v2 WHERE order_id = ?", (cust_query_id,)).fetchone()
+                    
+                    # Search by exact Order ID OR matching Phone Number
+                    clean_input = cust_query_input.replace("-", "").replace(" ", "").replace("(", "").replace(")", "")
+                    query = """
+                        SELECT * FROM orders_v2 
+                        WHERE order_id = ? 
+                        OR phone_number = ?
+                        OR REPLACE(REPLACE(REPLACE(REPLACE(phone_number, '-', ''), ' ', ''), '(', ''), ')', '') LIKE ?
+                        ORDER BY timestamp DESC
+                    """
+                    rows = conn.execute(query, (cust_query_input, cust_query_input, f"%{clean_input}%")).fetchall()
                     conn.close()
                     
-                    if row:
+                    if rows:
                         st.markdown("---")
-                        st.markdown(f"### Order Details for `{cust_query_id}`")
+                        st.markdown(f"### Found {len(rows)} Matching Order(s)")
                         
-                        status_raw = row["status"]
-                        status_emoji = "⏳"
-                        status_color = "orange"
-                        
-                        if "Preorder" in status_raw:
-                            status_emoji = "⭐"
-                            status_color = "blue"
-                        elif "Paid" in status_raw or "Processing" in status_raw:
-                            status_emoji = "📦"
-                            status_color = "blue"
-                        elif "Handed Over" in status_raw or "Completed" in status_raw or "Shipped" in status_raw:
-                            status_emoji = "✅"
-                            status_color = "green"
-                        elif "Cancel" in status_raw:
-                            status_emoji = "❌"
-                            status_color = "red"
-                            
-                        st.markdown(f"#### Status: :{status_color}[{status_emoji} {status_raw}]")
-                        
-                        col_details_1, col_details_2 = st.columns(2)
-                        with col_details_1:
-                            st.write(f"• **Customer:** {row['customer_name']}")
-                            st.write(f"• **Order Date:** {row['timestamp']}")
-                            st.write(f"• **Settlement Channel:** {row['payment_method']}")
-                        with col_details_2:
-                            st.write(f"• **Scent:** {row['scent_name']} ({row['quantity']} bottle(s))")
-                            st.write(f"• **Total Value:** ${row['total_paid']:.2f}")
-                            if row.get("is_preorder", 0) == 1:
-                                st.info("⭐ Prioritized Preorder Status Confirmed")
+                        for row in rows:
+                            with st.container(border=True):
+                                status_raw = row["status"]
+                                status_emoji = "⏳"
+                                status_color = "orange"
+                                
+                                if "Preorder" in status_raw:
+                                    status_emoji = "⭐"
+                                    status_color = "blue"
+                                elif "Paid" in status_raw or "Processing" in status_raw:
+                                    status_emoji = "📦"
+                                    status_color = "blue"
+                                elif "Handed Over" in status_raw or "Completed" in status_raw or "Shipped" in status_raw:
+                                    status_emoji = "✅"
+                                    status_color = "green"
+                                elif "Cancel" in status_raw:
+                                    status_emoji = "❌"
+                                    status_color = "red"
+                                    
+                                st.markdown(f"### Order ID: `{row['order_id']}`")
+                                st.markdown(f"#### Status: :{status_color}[{status_emoji} {status_raw}]")
+                                
+                                col_details_1, col_details_2 = st.columns(2)
+                                with col_details_1:
+                                    st.write(f"• **Customer:** {row['customer_name']}")
+                                    st.write(f"• **Phone:** {row['phone_number']}")
+                                    st.write(f"• **Order Date:** {row['timestamp']}")
+                                with col_details_2:
+                                    st.write(f"• **Scent:** {row['scent_name']} ({row['quantity']} bottle(s))")
+                                    st.write(f"• **Settlement Channel:** {row['payment_method']}")
+                                    st.write(f"• **Total Value:** ${row['total_paid']:.2f}")
+                                    if row.get("is_preorder", 0) == 1:
+                                        st.info("⭐ Prioritized Preorder Status Confirmed")
                     else:
-                        st.error("Order ID not found. Please double-check your receipt or spelling verification.")
+                        st.error("No orders found matching that Order ID or Phone Number. Please check your spelling and try again.")
                 except Exception as e:
                     st.error("An error occurred while connecting to the verification system.")
             else:
-                st.warning("Please type in an Order ID first.")
+                st.warning("Please type in an Order ID or Phone Number first.")
 
 # ==========================================
 # PRIVATE VIEW: OWNER HUB & POS
@@ -468,6 +482,7 @@ else:
                 pos_qty = st.number_input("In-Person Quantity:", min_value=1, max_value=max_pos, value=1, step=1, key="pos_qty_select")
                 
                 client_name = st.text_input("Walk-in Customer Name:", placeholder="Jane Doe")
+                client_phone = st.text_input("Walk-in Customer Phone Number:", placeholder="863-555-0199")
                 payment_vector = st.selectbox("Settlement Channel:", ["Cash", "Zelle", "Cash App", "Venmo", "Apple Pay"])
                 generate_click = st.button("Process Live Checkout Configuration")
                 
@@ -477,6 +492,7 @@ else:
                 else:
                     st.session_state.pos_cart = {
                         "client": client_name.strip(),
+                        "phone": client_phone.strip() if client_phone.strip() else "N/A",
                         "category": cat_select,
                         "code": matching_obj["code"],
                         "scent": matching_obj["scent"],
@@ -494,6 +510,7 @@ else:
                     st.info("⭐ Recorded as Priority Preorder")
                 st.metric("Immediate Cash Flow Collected", f"${cart['price']:.2f}")
                 st.write(f"• **Customer:** {cart['client']}")
+                st.write(f"• **Phone:** {cart['phone']}")
                 st.write(f"• **Scent:** {cart['scent']} ({cart['quantity']} Unit(s))")
                 
                 if st.button("Commit Sale to Ledger"):
@@ -507,7 +524,7 @@ else:
                     cursor.execute("""
                         INSERT INTO orders_v2 (order_id, timestamp, customer_name, phone_number, delivery_address, category, product_code, scent_name, quantity, payment_method, total_paid, status, order_type, is_preorder)
                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """, (generated_id, timestamp_str, cart['client'], 'N/A', 'In-Person Sale', cart['category'], cart['code'], cart['scent'], cart['quantity'], cart['vector'], cart['price'], pos_status, "POS Register", cart.get("is_preorder", 0)))
+                    """, (generated_id, timestamp_str, cart['client'], cart['phone'], 'In-Person Sale', cart['category'], cart['code'], cart['scent'], cart['quantity'], cart['vector'], cart['price'], pos_status, "POS Register", cart.get("is_preorder", 0)))
                     conn.commit()
                     conn.close()
                     
@@ -580,26 +597,38 @@ else:
         except Exception:
             st.info("No active web orders in logging memory.")
 
+    # --- TAB: ORDER LOOKUP BY ID OR PHONE ---
     with tab_track:
         st.markdown("### System Pipeline Diagnostic Registry")
-        user_query_input = st.text_input("Input Target Tracking Order Code:", placeholder="TF-WEB-1234").strip()
+        user_query_input = st.text_input("Input Order Code or Customer Phone Number:", placeholder="TF-WEB-1234 or 863-555-0199").strip()
+        
         if st.button("Query Database"):
             if user_query_input:
                 try:
                     conn = get_db_connection()
-                    row = conn.execute("SELECT * FROM orders_v2 WHERE order_id = ?", (user_query_input,)).fetchone()
+                    clean_input = user_query_input.replace("-", "").replace(" ", "").replace("(", "").replace(")", "")
+                    query = """
+                        SELECT * FROM orders_v2 
+                        WHERE order_id = ? 
+                        OR phone_number = ?
+                        OR REPLACE(REPLACE(REPLACE(REPLACE(phone_number, '-', ''), ' ', ''), '(', ''), ')', '') LIKE ?
+                        ORDER BY timestamp DESC
+                    """
+                    results = conn.execute(query, (user_query_input, user_query_input, f"%{clean_input}%")).fetchall()
                     conn.close()
-                    if row:
-                        st.markdown(f"### Update Diagnostic: Order Found ✅")
-                        st.metric("Fulfillment Processing Status", row["status"])
-                        st.write(f"• **Channel:** {row['payment_method']}")
-                        st.write(f"• **Quantity:** {row['quantity']} Unit(s) — **Total:** ${row['total_paid']:.2f}")
-                        if row.get("is_preorder", 0) == 1:
-                            st.info("⭐ Prioritized Preorder Status Flag Active")
+                    
+                    if results:
+                        st.markdown(f"### Diagnostic Result: Found {len(results)} Matching Order(s) ✅")
+                        
+                        # Display results in a table
+                        results_data = [dict(r) for r in results]
+                        st.dataframe(pd.DataFrame(results_data), use_container_width=True)
                     else:
-                        st.error("No transaction found.")
-                except Exception:
-                    st.error("Database error.")
+                        st.error("No transaction found matching that ID or Phone Number.")
+                except Exception as e:
+                    st.error("Database error while processing lookup request.")
+            else:
+                st.warning("Please enter an Order ID or Phone Number.")
 
     # --- COMPLETE GLOBAL FINANCIAL LEDGER MATRIX WITH 30-DAY TRUCKING ---
     with tab_ops:
@@ -663,4 +692,3 @@ st.markdown(
     """, 
     unsafe_allow_html=True
 )
-
