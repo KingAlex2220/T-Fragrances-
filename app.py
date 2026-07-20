@@ -87,7 +87,16 @@ def init_db():
         )
     """)
     
-    # Update default values cleanly across all items
+    # Check existing inventory columns & auto-migrate missing ones
+    cursor.execute("PRAGMA table_info(inventory)")
+    existing_cols = [col[1] for col in cursor.fetchall()]
+    
+    if "stock_quantity" not in existing_cols:
+        cursor.execute("ALTER TABLE inventory ADD COLUMN stock_quantity INTEGER DEFAULT 4")
+    if "initial_capacity" not in existing_cols:
+        cursor.execute("ALTER TABLE inventory ADD COLUMN initial_capacity INTEGER DEFAULT 4")
+
+    # Update values safely across all items
     cursor.execute("UPDATE inventory SET stock_quantity = 4, initial_capacity = 4")
     
     for item in ALL_CATALOG_ITEMS:
