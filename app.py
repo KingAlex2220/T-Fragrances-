@@ -43,8 +43,7 @@ women_catalog = [
 
 home_catalog = [
     {"code": "H#1", "label": "H#1 | House Blend - Laundry day", "scent": "Laundry day", "category": "Home & House Scents"},
-    {"code": "H#2", "label": "H#2 | House Blend - Gain", "scent": "Gain", "category": "Home & House Scents"},
-    {"code": "H#3", "label": "H#3 | House Blend - Apple Blossom", "scent": "Apple Blossom", "category": "Home & House Scents"}
+    {"code": "H#2", "label": "H#2 | House Blend - Sunrise", "scent": "Sunrise", "category": "Home & House Scents"},
 ]
 
 ALL_CATALOG_ITEMS = men_catalog + women_catalog + home_catalog
