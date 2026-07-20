@@ -49,7 +49,7 @@ home_catalog = [
 ]
 
 ALL_CATALOG_ITEMS = men_catalog + women_catalog + home_catalog
-DEFAULT_INITIAL_STOCK = 4
+DEFAULT_INITIAL_STOCK = 4  # Updated stock capacity to 4
 PRICE_PER_BOTTLE = 80.00
 LOCAL_BOTTLE_IMG = "images/bottles.png"
 LOCAL_QR_IMG = "images/zelle_qr.png"
@@ -117,6 +117,13 @@ def restock_item(product_code, add_qty):
     cursor.execute("UPDATE inventory SET stock_quantity = stock_quantity + ? WHERE product_code = ?", (add_qty, product_code))
     conn.commit()
 
+def reset_all_stock_to_default(qty=4):
+    """Utility function to reset existing database stock records to the new default."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE inventory SET stock_quantity = ?, initial_capacity = ?", (qty, qty))
+    conn.commit()
+
 # --- SIDEBAR ACCESS INTERFACE ---
 st.sidebar.markdown("### 🔒 System Portal")
 access_mode = "🛍️ Public Storefront"
@@ -155,8 +162,8 @@ if access_mode == "🛍️ Public Storefront":
                 
                 if is_preorder_item:
                     st.info("⭐ **PRIORITY PREORDER ITEM:** Regular stock is currently reserved/sold out. Placing an order reserves your bottle in our upcoming priority batch!")
-                elif current_stock <= (initial_cap * 0.5):
-                    st.warning(f"⚠️ Limited Regular Stock Remaining! (Only {current_stock} left)")
+                elif current_stock <= 2:
+                    st.warning(f"⚠️ Low Stock Remaining! (Only {current_stock} left)")
                 else:
                     st.caption(f"In Stock ({current_stock} available)")
 
@@ -290,7 +297,6 @@ if access_mode == "🛍️ Public Storefront":
             else:
                 st.info("Select a scent and fill out details to view invoice configurations.")
 
-    # --- UPDATED TRACKING & CUSTOMER PHONE LOOKUP TAB ---
     with track_tab:
         st.subheader("📦 Order Lookup & Customer History")
         st.write("Lookup a specific **Order ID** or enter your **Phone Number** to view your complete order history.")
@@ -304,7 +310,6 @@ if access_mode == "🛍️ Public Storefront":
                 if cust_phone_query:
                     try:
                         conn = get_db_connection()
-                        # Normalizes digits to search accurately regardless of formatting (dashes, spaces, parens)
                         cleaned_digits = "".join(filter(str.isdigit, cust_phone_query))
                         
                         if not cleaned_digits:
@@ -456,7 +461,7 @@ else:
                 
                 if is_pos_preorder:
                     st.info("⭐ **PREORDER MODE:** Regular stock is out. Processing as a Priority Preorder.")
-                elif current_stock <= (initial_cap * 0.5):
+                elif current_stock <= 2:
                     st.warning(f"⚠️ Low Stock Alert: Only {current_stock} left")
 
                 max_pos = 100 if is_pos_preorder else max(1, current_stock)
@@ -515,6 +520,13 @@ else:
 
     with tab_inventory:
         st.markdown("### 📦 Inventory Stock Levels & Restock Portal")
+        
+        # Option to sync existing database quantities to 4
+        if st.button("🔄 Sync All Items in Database to 4 Units"):
+            reset_all_stock_to_default(4)
+            st.success("All inventory stock counts updated to 4 units!")
+            st.rerun()
+            
         inv_df = pd.read_sql_query("SELECT product_code AS Code, category AS Category, scent_name AS Scent, stock_quantity AS 'Stock Left', initial_capacity AS Capacity FROM inventory", conn)
         inv_df["Stock Level (%)"] = (inv_df["Stock Left"] / inv_df["Capacity"] * 100).round(1).astype(str) + "%"
         
@@ -526,7 +538,7 @@ else:
         with col_r1:
             item_to_restock = st.selectbox("Select Scent to Restock:", [f"{item['code']} - {item['scent']}" for item in ALL_CATALOG_ITEMS])
         with col_r2:
-            add_amount = st.number_input("Quantity to Add:", min_value=1, max_value=500, value=10, step=1)
+            add_amount = st.number_input("Quantity to Add:", min_value=1, max_value=500, value=4, step=1)
         with col_r3:
             st.write(" ")
             st.write(" ")
@@ -626,7 +638,7 @@ st.markdown(
 st.markdown(
     """
     <p style='text-align: center; color: #FFFFFF; font-size: 0.9rem; margin-top: 10px;'>
-    © T Fragrances. All Rights Reserved.
+    © 2026 T Fragrances. All Rights Reserved.
     </p>
     """, 
     unsafe_allow_html=True
