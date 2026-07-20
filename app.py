@@ -49,7 +49,7 @@ home_catalog = [
 ]
 
 ALL_CATALOG_ITEMS = men_catalog + women_catalog + home_catalog
-DEFAULT_INITIAL_STOCK = 4  # Updated stock capacity to 4
+DEFAULT_INITIAL_STOCK = 4
 PRICE_PER_BOTTLE = 80.00
 LOCAL_BOTTLE_IMG = "images/bottles.png"
 LOCAL_QR_IMG = "images/zelle_qr.png"
@@ -89,8 +89,11 @@ def init_db():
     
     for item in ALL_CATALOG_ITEMS:
         cursor.execute("""
-            INSERT OR IGNORE INTO inventory (product_code, category, scent_name, stock_quantity, initial_capacity)
+            INSERT INTO inventory (product_code, category, scent_name, stock_quantity, initial_capacity)
             VALUES (?, ?, ?, ?, ?)
+            ON CONFLICT(product_code) DO UPDATE SET
+                stock_quantity = 4,
+                initial_capacity = 4
         """, (item["code"], item["category"], item["scent"], DEFAULT_INITIAL_STOCK, DEFAULT_INITIAL_STOCK))
         
     conn.commit()
@@ -115,13 +118,6 @@ def restock_item(product_code, add_qty):
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("UPDATE inventory SET stock_quantity = stock_quantity + ? WHERE product_code = ?", (add_qty, product_code))
-    conn.commit()
-
-def reset_all_stock_to_default(qty=4):
-    """Utility function to reset existing database stock records to the new default."""
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("UPDATE inventory SET stock_quantity = ?, initial_capacity = ?", (qty, qty))
     conn.commit()
 
 # --- SIDEBAR ACCESS INTERFACE ---
@@ -521,12 +517,6 @@ else:
     with tab_inventory:
         st.markdown("### 📦 Inventory Stock Levels & Restock Portal")
         
-        # Option to sync existing database quantities to 4
-        if st.button("🔄 Sync All Items in Database to 4 Units"):
-            reset_all_stock_to_default(4)
-            st.success("All inventory stock counts updated to 4 units!")
-            st.rerun()
-            
         inv_df = pd.read_sql_query("SELECT product_code AS Code, category AS Category, scent_name AS Scent, stock_quantity AS 'Stock Left', initial_capacity AS Capacity FROM inventory", conn)
         inv_df["Stock Level (%)"] = (inv_df["Stock Left"] / inv_df["Capacity"] * 100).round(1).astype(str) + "%"
         
