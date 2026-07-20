@@ -397,9 +397,10 @@ st.markdown(
     <strong>LEGAL DISCLAIMER:</strong> T Fragrances competes with the designer brands. It does not use their 
     fragrances and is not associated or affiliated in any way with the designer brands or their manufacturers. 
     All trademarks are the property of their respective owners. We use designer names solely for comparative 
-    purposes to give customers an idea of the scent character and olfactory notes.
+    purposes to give customers an idea of the scent character and olfactory notes.<br><br>
+    <strong>ALLERGY & SENSITIVITY NOTICE:</strong> Our products contain fragrance oils and ingredients that may cause skin irritation or allergic reactions in sensitive individuals. Please review ingredient lists carefully and perform a patch test prior to full application. Discontinue use immediately if irritation occurs. T Fragrances is not responsible for any adverse reactions.
     </div>
-    """, 
+    """,
     unsafe_allow_html=True
 )
 
