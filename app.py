@@ -31,12 +31,12 @@ men_catalog = [
     {"code": "#53G", "label": "#53G | Impression of Dolce & Gabbana - King", "scent": "Impression of King", "category": "Men's Premium Oils"},
     {"code": "#168J", "label": "#168J | Impression of YSL - Myself Absolute", "scent": "Impression of Myself Absolute", "category": "Men's Premium Oils"},
     {"code": "#18G", "label": "#18G | Impression of Armani - Armani Code", "scent": "Impression of Armani Code", "category": "Men's Premium Oils"},
-    {"code": "#15A", "label": "#15A | Impression of Maison Francis Kurkdjian - Baccarat 540", "scent": "Impression of Baccarat 540", "category": "Men's Premium Oils"},
+    {"code": "#15A_M", "label": "#15A | Impression of Maison Francis Kurkdjian - Baccarat 540", "scent": "Impression of Baccarat 540", "category": "Men's Premium Oils"},
     {"code": "#43B", "label": "#43B | Impression of Christian Dior - Sauvage", "scent": "Impression of Sauvage", "category": "Men's Premium Oils"}
 ]
 
 women_catalog = [
-    {"code": "#15A", "label": "#15A | Impression of Baccarat - Rouge 540", "scent": "Impression of Rouge 540", "category": "Women's Premium Oils"},
+    {"code": "#15A_W", "label": "#15A | Impression of Baccarat - Rouge 540", "scent": "Impression of Rouge 540", "category": "Women's Premium Oils"},
     {"code": "#16", "label": "#16 | Impression of Chanel - Coco Mademoiselle", "scent": "Impression of Coco Mademoiselle", "category": "Women's Premium Oils"},
     {"code": "#17", "label": "#17 | Impression of Dior - Miss Dior", "scent": "Impression of Miss Dior", "category": "Women's Premium Oils"},
     {"code": "#21A", "label": "#21A | Impression of Chanel - Chance", "scent": "Impression of Chance", "category": "Women's Premium Oils"}
@@ -87,13 +87,13 @@ def init_db():
         )
     """)
     
+    # Update default values cleanly across all items
+    cursor.execute("UPDATE inventory SET stock_quantity = 4, initial_capacity = 4")
+    
     for item in ALL_CATALOG_ITEMS:
         cursor.execute("""
-            INSERT INTO inventory (product_code, category, scent_name, stock_quantity, initial_capacity)
+            INSERT OR REPLACE INTO inventory (product_code, category, scent_name, stock_quantity, initial_capacity)
             VALUES (?, ?, ?, ?, ?)
-            ON CONFLICT(product_code) DO UPDATE SET
-                stock_quantity = 4,
-                initial_capacity = 4
         """, (item["code"], item["category"], item["scent"], DEFAULT_INITIAL_STOCK, DEFAULT_INITIAL_STOCK))
         
     conn.commit()
