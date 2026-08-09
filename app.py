@@ -119,7 +119,7 @@ def calculate_order_total(quantity):
     if qty <= 0:
         return 0.0, 0.0, 0.0
     
-    subtotal = float(qty calculate_order_total()
+    subtotal = float(qty) calculate_order_total()
     
     if subtotal > 100.00:
         discount_amount = subtotal * 0.20
