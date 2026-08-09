@@ -32,7 +32,7 @@ women_catalog = [
     {"code": "NO-2", "label": "No 2 | No 2 Good Girl Blend", "scent": "No 2 Good Girl Blend", "category": "Women's Premium Oils"},
     {"code": "NO-3", "label": "No 3 | No 3 Rouge 540 Blend", "scent": "No 3 Rouge 540 Blend", "category": "Women's Premium Oils"},
     
-
+]
 home_catalog = [
     {"code": "H#1", "label": "H#1 | House Blend - Laundry day", "scent": "Laundry day", "category": "Home & House Scents"},
     {"code": "H#2", "label": "H#2 | House Blend - Sunrise", "scent": "Sunrise", "category": "Home & House Scents"},
