@@ -119,7 +119,7 @@ def calculate_order_total(quantity):
     if qty <= 0:
         return 0.0, 0.0, 0.0
     
-    subtotal = float(qty * 60.00)
+    subtotal = float(qty calculate_order_total()
     
     if subtotal > 100.00:
         discount_amount = subtotal * 0.20
@@ -136,7 +136,7 @@ def restock_item(product_code, add_qty):
     conn.commit()
     conn.close()
 
-PRICE_PER_BOTTLE = 60.00
+PRICE_PER_BOTTLE = calculate_order_total()
 LOCAL_BOTTLE_IMG = "images/bottles.png"
 LOCAL_QR_IMG = "images/zelle_qr.png"
 
