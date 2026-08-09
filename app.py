@@ -9,7 +9,7 @@ import pandas as pd
 st.set_page_config(page_title="T Fragrances - Storefront & POS", page_icon="✨", layout="wide")
 
 st.markdown("<h1 style='text-align: center; color: #1E293B; font-family: \"Segoe UI\", sans-serif; margin-bottom: 0;'>T FRAGRANCES</h1>", unsafe_allow_html=True)
-st.markdown("<p style='text-align: center; font-style: italic; color: #64748B; font-size: 1.1rem; margin-top: 5px;'>Designer Quality (30ml) | 100% Pure Oil-Based | Reimagined Luxury</p>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; font-style: italic; color: #64748B; font-size: 1.1rem; margin-top: 5px;'>Designer Quality (50ml) | 100% Pure Oil-Based | Reimagined Luxury</p>", unsafe_allow_html=True)
 st.markdown("---")
 
 # --- DATA STORAGE SETUP ---
@@ -21,21 +21,22 @@ def get_db_connection():
     return conn
 
 # --- EMBEDDED MASTER CATALOG ---
+# Updated with your new Signature Blends line
 men_catalog = [
-    {"code": "#48E", "label": "#48E | Impression of Creed - Aventus", "scent": "Impression of Aventus", "category": "Men's Premium Oils"},
+    {"code": "NO-1", "label": "No 1 | No 1 Sauvage Blend", "scent": "No 1 Sauvage Blend", "category": "Men's Premium Oils"},
+    {"code": "NO-4", "label": "No 4 | No 4 Aventus Blend", "scent": "No 4 Aventus Blend", "category": "Men's Premium Oils"},
     {"code": "#135G", "label": "#135G | Impression of Paco Rabanne - Invictus", "scent": "Impression of Invictus", "category": "Men's Premium Oils"},
     {"code": "#91", "label": "#91 | Impression of Jimmy Choo - Man", "scent": "Impression of Man", "category": "Men's Premium Oils"},
     {"code": "#135A", "label": "#135A | Impression of Paco Rabanne - One Million", "scent": "Impression of One Million", "category": "Men's Premium Oils"},
     {"code": "#53B", "label": "#53B | Impression of Dolce & Gabbana - Light Blue", "scent": "Impression of Light Blue", "category": "Men's Premium Oils"},
     {"code": "#53G", "label": "#53G | Impression of Dolce & Gabbana - King", "scent": "Impression of King", "category": "Men's Premium Oils"},
     {"code": "#168J", "label": "#168J | Impression of YSL - Myself Absolute", "scent": "Impression of Myself Absolute", "category": "Men's Premium Oils"},
-    {"code": "#18G", "label": "#18G | Impression of Armani - Armani Code", "scent": "Impression of Armani Code", "category": "Men's Premium Oils"},
-    {"code": "#15A", "label": "#15A | Impression of Maison Francis Kurkdjian - Baccarat 540", "scent": "Impression of Baccarat 540", "category": "Men's Premium Oils"},
-    {"code": "#43B", "label": "#43B | Impression of Christian Dior - Sauvage", "scent": "Impression of Sauvage", "category": "Men's Premium Oils"}
+    {"code": "#18G", "label": "#18G | Impression of Armani - Armani Code", "scent": "Impression of Armani Code", "category": "Men's Premium Oils"}
 ]
 
 women_catalog = [
-    {"code": "#15A", "label": "#15A | Impression of Baccarat - Rouge 540", "scent": "Impression of Rouge 540", "category": "Women's Premium Oils"},
+    {"code": "NO-2", "label": "No 2 | No 2 Good Girl Blend", "scent": "No 2 Good Girl Blend", "category": "Women's Premium Oils"},
+    {"code": "NO-3", "label": "No 3 | No 3 Rouge 540 Blend", "scent": "No 3 Rouge 540 Blend", "category": "Women's Premium Oils"},
     {"code": "#16", "label": "#16 | Impression of Chanel - Coco Mademoiselle", "scent": "Impression of Coco Mademoiselle", "category": "Women's Premium Oils"},
     {"code": "#17", "label": "#17 | Impression of Dior - Miss Dior", "scent": "Impression of Miss Dior", "category": "Women's Premium Oils"},
     {"code": "#21A", "label": "#21A | Impression of Chanel - Chance", "scent": "Impression of Chance", "category": "Women's Premium Oils"}
@@ -94,7 +95,7 @@ def init_db():
         )
     """)
     
-    # Populate inventory defaults if empty
+    # Populate inventory defaults if empty / Sync new catalog items
     for item in ALL_CATALOG_ITEMS:
         cursor.execute("""
             INSERT OR IGNORE INTO inventory (product_code, category, scent_name, stock_quantity, initial_capacity)
@@ -221,7 +222,7 @@ if access_mode == "🛍️ Public Storefront":
                         "payment_method": payment_method,
                         "is_preorder": 1 if is_preorder_item else 0
                     }
-
+ 
         with col_store_right:
             st.markdown("#### 🧾 Order Invoice & Payment Breakdown")
             if "web_cart" in st.session_state and st.session_state.web_cart is not None:
@@ -329,7 +330,6 @@ if access_mode == "🛍️ Public Storefront":
                 try:
                     conn = get_db_connection()
                     
-                    # Search by exact Order ID OR matching Phone Number
                     clean_input = cust_query_input.replace("-", "").replace(" ", "").replace("(", "").replace(")", "")
                     query = """
                         SELECT * FROM orders_v2 
@@ -377,7 +377,6 @@ if access_mode == "🛍️ Public Storefront":
                                     st.write(f"• **Settlement Channel:** {row['payment_method']}")
                                     st.write(f"• **Total Value:** ${row['total_paid']:.2f}")
                                     
-                                    # Safely check if is_preorder column exists in keys
                                     if "is_preorder" in row.keys() and row["is_preorder"] == 1:
                                         st.info("⭐ Prioritized Preorder Status Confirmed")
                     else:
@@ -621,7 +620,6 @@ else:
                     if results:
                         st.markdown(f"### Diagnostic Result: Found {len(results)} Matching Order(s) ✅")
                         
-                        # Display results in a table
                         results_data = [dict(r) for r in results]
                         st.dataframe(pd.DataFrame(results_data), use_container_width=True)
                     else:
@@ -657,7 +655,6 @@ else:
                 
                 st.markdown("---")
                 
-                # Interactive Ledger Filter checkbox
                 show_only_30_days = st.checkbox("📅 Filter Matrix Ledger view to past 30 days only", value=False)
                 
                 display_df = df_30_days if show_only_30_days else df_orders
@@ -675,10 +672,10 @@ st.markdown("---")
 st.markdown(
     """
     <div style='font-size: 0.8rem; color: #64748B; text-align: justify; line-height: 1.4; margin-bottom: 20px;'>
-    <strong>LEGAL DISCLAIMER:</strong> T Fragrances competes with the designer brands. It does not use their 
-    fragrances and is not associated or affiliated in any way with the designer brands or their manufacturers. 
+    <strong>LEGAL DISCLAIMER:</strong> T Fragrances competes with designer brands. It does not use their 
+    fragrances and is not associated or affiliated in any way with designer brands or their manufacturers. 
     All trademarks are the property of their respective owners. We use designer names solely for comparative 
-    purposes to give customers an idea of the scent character and olfactory notes.<br><br>
+    purposes to give customers an idea of scent character and olfactory notes.<br><br>
     <strong>ALLERGY & SENSITIVITY NOTICE:</strong> Our products contain fragrance oils and ingredients that may cause skin irritation or allergic reactions in sensitive individuals. Please review ingredient lists carefully and perform a patch test prior to full application. Discontinue use immediately if irritation occurs. T Fragrances is not responsible for any adverse reactions.
     </div>
     """,
