@@ -679,5 +679,5 @@ st.markdown(
     © T Fragrances. All Rights Reserved.
     </p>
     """, 
-    unsafe_allow_html=True
- )
+    unsafe_allow_html=True 
+)
