@@ -136,7 +136,7 @@ def restock_item(product_code, add_qty):
     conn.commit()
     conn.close()
 
-PRICE_PER_BOTTLE = calculate_order_total()
+PRICE_PER_BOTTLE = 60.00
 LOCAL_BOTTLE_IMG = "images/bottles.png"
 LOCAL_QR_IMG = "images/zelle_qr.png"
 
