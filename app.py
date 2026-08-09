@@ -25,22 +25,13 @@ def get_db_connection():
 men_catalog = [
     {"code": "NO-1", "label": "No 1 | No 1 Sauvage Blend", "scent": "No 1 Sauvage Blend", "category": "Men's Premium Oils"},
     {"code": "NO-4", "label": "No 4 | No 4 Aventus Blend", "scent": "No 4 Aventus Blend", "category": "Men's Premium Oils"},
-    {"code": "#135G", "label": "#135G | Impression of Paco Rabanne - Invictus", "scent": "Impression of Invictus", "category": "Men's Premium Oils"},
-    {"code": "#91", "label": "#91 | Impression of Jimmy Choo - Man", "scent": "Impression of Man", "category": "Men's Premium Oils"},
-    {"code": "#135A", "label": "#135A | Impression of Paco Rabanne - One Million", "scent": "Impression of One Million", "category": "Men's Premium Oils"},
-    {"code": "#53B", "label": "#53B | Impression of Dolce & Gabbana - Light Blue", "scent": "Impression of Light Blue", "category": "Men's Premium Oils"},
-    {"code": "#53G", "label": "#53G | Impression of Dolce & Gabbana - King", "scent": "Impression of King", "category": "Men's Premium Oils"},
-    {"code": "#168J", "label": "#168J | Impression of YSL - Myself Absolute", "scent": "Impression of Myself Absolute", "category": "Men's Premium Oils"},
-    {"code": "#18G", "label": "#18G | Impression of Armani - Armani Code", "scent": "Impression of Armani Code", "category": "Men's Premium Oils"}
+
 ]
 
 women_catalog = [
     {"code": "NO-2", "label": "No 2 | No 2 Good Girl Blend", "scent": "No 2 Good Girl Blend", "category": "Women's Premium Oils"},
     {"code": "NO-3", "label": "No 3 | No 3 Rouge 540 Blend", "scent": "No 3 Rouge 540 Blend", "category": "Women's Premium Oils"},
-    {"code": "#16", "label": "#16 | Impression of Chanel - Coco Mademoiselle", "scent": "Impression of Coco Mademoiselle", "category": "Women's Premium Oils"},
-    {"code": "#17", "label": "#17 | Impression of Dior - Miss Dior", "scent": "Impression of Miss Dior", "category": "Women's Premium Oils"},
-    {"code": "#21A", "label": "#21A | Impression of Chanel - Chance", "scent": "Impression of Chance", "category": "Women's Premium Oils"}
-]
+    
 
 home_catalog = [
     {"code": "H#1", "label": "H#1 | House Blend - Laundry day", "scent": "Laundry day", "category": "Home & House Scents"},
