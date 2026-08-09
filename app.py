@@ -40,7 +40,7 @@ home_catalog = [
 
 ALL_CATALOG_ITEMS = men_catalog + women_catalog + home_catalog
 
-DEFAULT_INITIAL_STOCK =5  # Baseline stock capacity for 100% calculation
+DEFAULT_INITIAL_STOCK =  5  # Baseline stock capacity for 100% calculation
 
 def init_db():
     conn = get_db_connection()
@@ -81,8 +81,8 @@ def init_db():
             product_code TEXT PRIMARY KEY,
             category TEXT,
             scent_name TEXT,
-            stock_quantity INTEGER DEFAULT 20,
-            initial_capacity INTEGER DEFAULT 20
+            stock_quantity INTEGER DEFAULT 5,
+            initial_capacity INTEGER DEFAULT 5
         )
     """)
     
