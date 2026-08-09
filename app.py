@@ -113,6 +113,21 @@ def deduct_inventory(product_code, qty):
     cursor.execute("UPDATE inventory SET stock_quantity = MAX(0, stock_quantity - ?) WHERE product_code = ?", (qty, product_code))
     conn.commit()
     conn.close()
+# 20% DISCOUNT LOGIC: $60 per bottle flat base rate, 20% off total if subtotal > $100
+def calculate_order_total(quantity):
+    qty = int(quantity)
+    if qty <= 0:
+        return 0.0, 0.0, 0.0
+    
+    subtotal = float(qty * 60.00)
+    
+    if subtotal > 100.00:
+        discount_amount = subtotal * 0.20
+    else:
+        discount_amount = 0.0
+        
+    final_total = subtotal - discount_amount
+    return final_total, subtotal, discount_amount
 
 def restock_item(product_code, add_qty):
     conn = get_db_connection()
