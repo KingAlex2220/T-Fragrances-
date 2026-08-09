@@ -40,7 +40,7 @@ home_catalog = [
 
 ALL_CATALOG_ITEMS = men_catalog + women_catalog + home_catalog
 
-DEFAULT_INITIAL_STOCK = 20  # Baseline stock capacity for 100% calculation
+DEFAULT_INITIAL_STOCK = 05  # Baseline stock capacity for 100% calculation
 
 def init_db():
     conn = get_db_connection()
