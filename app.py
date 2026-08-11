@@ -272,21 +272,22 @@ if access_mode == "🛍️ Public Storefront":
                 st.write(f"• **Settlement Channel:** {cart['payment_method']}")
                 st.write(f"• **Order Type:** {'Priority Preorder' if cart.get('is_preorder') == 1 else 'Standard In-Stock'}")
                 
-                confirm_label = "Confirm & Place Priority Preorder" if cart.get("is_preorder") == 1 else "Confirm & Place Order"
-                if st.button(confirm_label):
-                                if st.button(confirm_label, type="primary"):
+                            confirm_label = "Confirm & Place Priority Preorder" if cart.get("is_preorder", 0) == 1 else "Confirm Order"
+            if st.button(confirm_label, type="primary"):
                 generated_id = f"TF-{int(time.time())}"
                 timestamp_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
                 initial_status = "Preorder - Awaiting Batch Restock" if cart.get("is_preorder", 0) == 1 else "Awaiting Settlement"
 
-                    cursor = conn.cursor()
-                    cursor.execute("""
-                        INSERT INTO orders_v2 (order_id, timestamp, customer_name, phone_number, delivery_address, category, product_code, scent_name, quantity, payment_method, total_paid, status, order_type, is_preorder)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """, (generated_id, timestamp_str, cart['name'], cart['phone'], cart['address'], cart['category'], cart['code'], cart['scent'], cart['quantity'], cart['payment_method'], cart['total'], initial_status, "Online Store", cart.get("is_preorder", 0))
-                    conn.commit()
-                    conn.close()
+                conn = get_db_connection()
+                cursor = conn.cursor()
+                cursor.execute(
+                    "INSERT INTO orders_v2 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    (generated_id, timestamp_str, cart['name'], cart['phone'], cart['address'], cart['category'], cart['code'], cart['scent'], cart['quantity'], cart['total'], cart['payment_method'], cart['is_preorder'], initial_status)
+                )
+                conn.commit()
+                conn.close()
+
                     
                     # Deduct from stock if regular stock
                     if cart.get("is_preorder", 0) == 0:
