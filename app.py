@@ -231,7 +231,7 @@ if access_mode == "🛍️ Public Storefront":
             st.markdown("#### 4. Select Settlement Channel")
             payment_method = st.selectbox(
                 "Payment / Settlement Channel:",
-                ["Zelle", "Cash App", "Venmo",],
+                ["Zelle", "Cash App",],
                 help="Choose your preferred payment method to view settlement details."
             )
             
