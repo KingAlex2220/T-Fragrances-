@@ -256,7 +256,7 @@ if access_mode == "🛍️ Public Storefront":
                     "is_preorder": 1 if is_preorder_item else 0
                 }
                 if "web_cart" in st.session_state:
-            cart = st.session_state.web_cart
+             cart = st.session_state.web_cart
 
             st.info("⚙️ **Invoice Generated Successfully**")
 
