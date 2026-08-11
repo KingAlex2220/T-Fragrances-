@@ -265,7 +265,7 @@ if access_mode == "🛍️ Public Storefront":
 
                     st.warning("⭐ **PRIORITY PREORDER STATUS APPLIED**")
                     
-                st.metric("Total Balance Due", f"${cart['total']:.2f}")
+            st.metric("Total Balance Due", f"${cart['total']:.2f}")
                 st.write(f"• **Purchaser:** {cart['name']}")
                 st.write(f"• **Phone:** {cart['phone']}")
                 st.write(f"• **Selection:** {cart['code']} - {cart['scent']}")
