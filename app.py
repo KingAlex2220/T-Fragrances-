@@ -239,8 +239,8 @@ if access_mode == "🛍️ Public Storefront":
             submit_order = st.button(button_label, type="primary")
 
         # Process order form outside container block
-            if submit_order:
-             if not cust_name.strip() or not cust_phone.strip() or not cust_address.strip():
+                    if submit_order:
+            if not cust_name.strip() or not cust_phone.strip() or not cust_address.strip():
                 st.error("⚠️ Please fill out your Name, Phone Number, and Shipping Address.")
             else:
                 final_calculated_price, _, _ = calculate_order_total(web_qty)
@@ -256,6 +256,7 @@ if access_mode == "🛍️ Public Storefront":
                     "payment_method": payment_method,
                     "is_preorder": 1 if is_preorder_item else 0
                 }
+
 
 
                 st.info("⚙️ **Invoice Generated Successfully**")
