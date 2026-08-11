@@ -693,4 +693,4 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-st.markdown("<p style='text-align: center; color: #FFFFFF; font-size: 0.9rem; margin-top: 10px;'>© T Fragrances. All Rights Reserved.</p>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #FFFFFF; font-size: 0.9rem; margin-top: 10px;'>© T Fragrances. All Rights Reserved.</p>", unsafe_allow_html=True))
