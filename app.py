@@ -335,7 +335,7 @@ Send **${order_total:.2f}** via **Venmo**:
                 del st.session_state.last_order_id
                 st.rerun()
 
-                    st.markdown(f"""
+                st.markdown(f"""
                     Send **${order_total:.2f}** via **Cash App**:
                     * **Cash Tag:** `$TFragrances`
                     * **Phone:** `863-236-4196`
