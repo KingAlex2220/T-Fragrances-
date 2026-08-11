@@ -235,10 +235,9 @@ if access_mode == "🛍️ Public Storefront":
                 help="Choose your preferred payment method to view settlement details."
             )
             
-            button_label = "Review Priority Preorder Invoice" if is_preorder_item else "Review Order Invoice"
-            submit_order = st.button(button_label, type="primary")
+        button_label = "Review Priority Preorder Invoice" if is_preorder_item else "Review Order Invoice"
+        submit_order = st.button(button_label, type="primary")
 
-        # Process order form outside container block
         if submit_order:
             if not cust_name.strip() or not cust_phone.strip() or not cust_address.strip():
                 st.error("⚠️ Please fill out your Name, Phone Number, and Shipping Address.")
@@ -256,6 +255,7 @@ if access_mode == "🛍️ Public Storefront":
                     "payment_method": payment_method,
                     "is_preorder": 1 if is_preorder_item else 0
                 }
+
 
 
 
