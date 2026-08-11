@@ -347,7 +347,7 @@ if access_mode == "🛍️ Public Storefront":
                     if "last_order_method" in st.session_state: del st.session_state.last_order_method
                     if "last_order_preorder" in st.session_state: del st.session_state.last_order_preorder
                     st.rerun()
-            if:
+            else:
                 st.info("Select a scent and fill out details to view invoice configurations.")
 
     with track_tab:
