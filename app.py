@@ -316,9 +316,7 @@ if access_mode == "🛍️ Public Storefront":
                 st.info(f"Send **${order_total:.2f}** via **Zelle**:\n\n• **Recipient Phone:** `863-236-4196`\n• **Name:** Alexander Thompson\n• **Memo:** Order `{order_id}`")
             elif selected_method == "Cash App":
                 st.info(f"Send **${order_total:.2f}** via **Cash App**:\n\n• **Cashtag:** `$AlexanderThompson`\n• **Memo:** Order `{order_id}`")
-            elif selected_method == "Venmo":
-                st.info(f"Send **${order_total:.2f}** via **Venmo**:\n\n• **Handle:** `@AlexanderThompson`\n• **Memo:** Order `{order_id}`")
-
+            
             if st.button("Place Another Order"):
                 del st.session_state.last_order_id
                 st.rerun()
@@ -326,12 +324,7 @@ if access_mode == "🛍️ Public Storefront":
                 * **Cash Tag:** `$TFragrances`
                     * **Phone:** `863-236-4196`
                     """)
-                elif selected_method == "Venmo":
-                    st.markdown(f"""
-                    Send **${order_total:.2f}** via **Venmo**:
-                    * **Username:** `@TFragrances`
-                    * **Phone Verification (Last 4):** `4196`
-                    """)
+                
                 
                 
                 st.warning(f"⚠️ **IMPORTANT:** Always include your Order ID **`{order_id}`** in the payment note/memo!")
