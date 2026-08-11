@@ -240,7 +240,7 @@ if access_mode == "🛍️ Public Storefront":
 
         # Process order form outside container block
             if submit_order:
-            if not cust_name.strip() or not cust_phone.strip() or not cust_address.strip():
+             if not cust_name.strip() or not cust_phone.strip() or not cust_address.strip():
                 st.error("⚠️ Please fill out your Name, Phone Number, and Shipping Address.")
             else:
                 final_calculated_price, _, _ = calculate_order_total(web_qty)
