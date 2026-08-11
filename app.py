@@ -255,7 +255,7 @@ if access_mode == "🛍️ Public Storefront":
                     "payment_method": payment_method,
                     "is_preorder": 1 if is_preorder_item else 0
                 }
-        if "web_cart" in st.session_state:
+                if "web_cart" in st.session_state:
             cart = st.session_state.web_cart
 
             st.info("⚙️ **Invoice Generated Successfully**")
@@ -271,16 +271,15 @@ if access_mode == "🛍️ Public Storefront":
             st.write(f"• **Settlement Channel:** {cart['payment_method']}")
             st.write(f"• **Order Type:** {'Priority Preorder' if cart.get('is_preorder', 0) == 1 else 'Standard Order'}")
 
-                
-confirm_label = "Confirm & Place Priority Preorder" if cart.get("is_preorder", 0) == 1 else "Confirm Order"
+            confirm_label = "Confirm & Place Priority Preorder" if cart.get("is_preorder", 0) == 1 else "Confirm Order"
             if st.button(confirm_label, type="primary"):
-            generated_id = f"TF-{int(time.time())}"
-            timestamp_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                generated_id = f"TF-{int(time.time())}"
+                timestamp_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-            initial_status = "Preorder - Awaiting Batch Restock" if cart.get("is_preorder", 0) == 1 else "Awaiting Settlement"
+                initial_status = "Preorder - Awaiting Batch Restock" if cart.get("is_preorder", 0) == 1 else "Awaiting Settlement"
 
-            conn = get_db_connection()
-            cursor = conn.cursor()
+                conn = get_db_connection()
+                cursor = conn.cursor()
                 cursor.execute(
                     "INSERT INTO orders_v2 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                     (generated_id, timestamp_str, cart['name'], cart['phone'], cart['address'], cart['category'], cart['code'], cart['scent'], cart['quantity'], cart['total'], cart['payment_method'], cart['is_preorder'], initial_status)
@@ -298,8 +297,7 @@ confirm_label = "Confirm & Place Priority Preorder" if cart.get("is_preorder", 0
                 st.session_state.last_order_preorder = cart.get("is_preorder", 0)
                 st.session_state.pop("web_cart", None)
                 st.rerun()
-                conn = get_db_connection()
-                cursor = conn.cursor()
+
                 cursor.execute(
                     "INSERT INTO orders_v2 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                     (generated_id, timestamp_str, cart['name'], cart['phone'], cart['address'], cart['category'], cart['code'], cart['scent'], cart['quantity'], cart['total'], cart['payment_method'], cart['is_preorder'], initial_status)
