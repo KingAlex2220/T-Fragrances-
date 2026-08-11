@@ -273,7 +273,7 @@ if "web_cart" in st.session_state:
     st.write(f"• **Order Type:** {'Preorder' if cart['is_preorder'] else 'Standard'}")
 
                 
-                confirm_label = "Confirm & Place Priority Preorder" if cart.get("is_preorder") == 1 else "Confirm & Place Order"
+    confirm_label = "Confirm & Place Priority Preorder" if cart.get("is_preorder") == 1 else "Confirm & Place Order"
                 if st.button(confirm_label):
                     generated_id = f"TF-WEB-{random.randint(1000, 9999)}"
                     timestamp_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
