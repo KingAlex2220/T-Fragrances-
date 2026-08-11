@@ -273,14 +273,14 @@ if access_mode == "🛍️ Public Storefront":
 
                 
 confirm_label = "Confirm & Place Priority Preorder" if cart.get("is_preorder", 0) == 1 else "Confirm Order"
-            if st.button(confirm_label, type="primary"):
-                generated_id = f"TF-{int(time.time())}"
-                timestamp_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+         if st.button(confirm_label, type="primary"):
+            generated_id = f"TF-{int(time.time())}"
+            timestamp_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-                initial_status = "Preorder - Awaiting Batch Restock" if cart.get("is_preorder", 0) == 1 else "Awaiting Settlement"
+            initial_status = "Preorder - Awaiting Batch Restock" if cart.get("is_preorder", 0) == 1 else "Awaiting Settlement"
 
-                conn = get_db_connection()
-                cursor = conn.cursor()
+            conn = get_db_connection()
+            cursor = conn.cursor()
                 cursor.execute(
                     "INSERT INTO orders_v2 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                     (generated_id, timestamp_str, cart['name'], cart['phone'], cart['address'], cart['category'], cart['code'], cart['scent'], cart['quantity'], cart['total'], cart['payment_method'], cart['is_preorder'], initial_status)
