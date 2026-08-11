@@ -299,7 +299,7 @@ if access_mode == "🛍️ Public Storefront":
                     st.rerun()
                     
                 if "last_order_id" in st.session_state:
-                if st.session_state.get("last_order_preorder", 0) == 1:
+                 if st.session_state.get("last_order_preorder", 0) == 1:
                     st.success(f"⭐ Priority Preorder Reserved! ID: {st.session_state.last_order_id}")
                 else:
                     st.success(f"🎉 Order Placed! ID: {st.session_state.last_order_id}")
