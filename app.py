@@ -272,7 +272,7 @@ if access_mode == "🛍️ Public Storefront":
                 st.write(f"• **Settlement Channel:** {cart['payment_method']}")
                 st.write(f"• **Order Type:** {'Priority Preorder' if cart.get('is_preorder') == 1 else 'Standard In-Stock'}")
                 
-                            confirm_label = "Confirm & Place Priority Preorder" if cart.get("is_preorder", 0) == 1 else "Confirm Order"
+               confirm_label = "Confirm & Place Priority Preorder" if cart.get("is_preorder", 0) == 1 else "Confirm Order"
             if st.button(confirm_label, type="primary"):
                 generated_id = f"TF-{int(time.time())}"
                 timestamp_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
