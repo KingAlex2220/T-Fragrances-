@@ -290,7 +290,7 @@ if access_mode == "🛍️ Public Storefront":
 
                     
                     # Deduct from stock if regular stock
-                 if cart.get("is_preorder", 0) == 0:
+                        if cart.get("is_preorder", 0) == 0:
                         deduct_inventory(cart['code'], cart['quantity'])
                     
                     st.session_state.last_order_id = generated_id
