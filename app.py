@@ -281,7 +281,7 @@ if "web_cart" in st.session_state:
         initial_status = "Preorder - Awaiting Batch Restock" if cart.get("is_preorder", 0) == 1 else f"Awaiting Payment ({cart['payment_method']})"
                     
                     # Record Order in DB
-                    conn = get_db_connection()
+        conn = get_db_connection()
                     cursor = conn.cursor()
                     cursor.execute("""
                         INSERT INTO orders_v2 (order_id, timestamp, customer_name, phone_number, delivery_address, category, product_code, scent_name, quantity, payment_method, total_paid, status, order_type, is_preorder)
