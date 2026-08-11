@@ -257,28 +257,27 @@ if access_mode == "🛍️ Public Storefront":
                 }
 
 
-if "web_cart" in st.session_state:
-    cart = st.session_state.web_cart
-    st.info("⚙️ **Invoice Generated Successfully**")
+        if "web_cart" in st.session_state:
+            cart = st.session_state.web_cart
+            st.info("⚙️ **Invoice Generated Successfully**")
 
-    if cart.get("is_preorder", 0) == 1:
-        st.warning("⭐ **PRIORITY PREORDER ORDER**")
+            if cart.get("is_preorder", 0) == 1:
+                st.warning("⭐ **PRIORITY PREORDER ORDER**")
 
-    st.metric("Total Balance", f"${cart['total']:.2f}")
-    st.write(f"• **Purchaser:** {cart['name']}")
-    st.write(f"• **Phone:** {cart['phone']}")
-    st.write(f"• **Selection:** {cart['category']} - {cart['scent']}")
-    st.write(f"• **Quantity:** {cart['quantity']}")
-    st.write(f"• **Settlement:** {cart['payment_method']}")
-    st.write(f"• **Order Type:** {'Preorder' if cart['is_preorder'] else 'Standard'}")
+            st.metric("Total Balance", f"${cart['total']:.2f}")
+            st.write(f"• **Purchaser:** {cart['name']}")
+            st.write(f"• **Phone:** {cart['phone']}")
+            st.write(f"• **Selection:** {cart['category']} - {cart['scent']}")
+            st.write(f"• **Quantity:** {cart['quantity']}")
+            st.write(f"• **Settlement:** {cart['payment_method']}")
+            st.write(f"• **Order Type:** {'Preorder' if cart['is_preorder'] else 'Standard'}")
 
-                
-    confirm_label = "Confirm & Place Priority Preorder" if cart.get("is_preorder") == 1 else "Confirm & Place Order"
-    if st.button(confirm_label):
-        generated_id = f"TF-WEB-{random.randint(1000, 9999)}"
-        timestamp_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    
-        initial_status = "Preorder - Awaiting Batch Restock" if cart.get("is_preorder", 0) == 1 else f"Awaiting Payment ({cart['payment_method']})"
+            confirm_label = "Confirm & Place Priority Preorder" if cart['is_preorder'] else "Confirm Order"
+            if st.button(confirm_label, type="primary"):
+                generated_id = f"TF-{int(time.time())}"
+                timestamp_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                initial_status = "Preorder Pending" if cart['is_preorder'] else "Pending"
+
                     
                     # Record Order in DB
         conn = get_db_connection()
