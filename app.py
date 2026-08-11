@@ -196,7 +196,7 @@ if access_mode == "🛍️ Public Storefront":
                 is_preorder_item = True
 
             else:
-                st.markdown("#### 2. Choose Your Scent & Size")
+                st.markdown("#### 2. Choose Your Scent")
                 if cat_select == "Men's Premium Oils":
                     active_list = men_catalog
                 elif cat_select == "Women's Premium Oils":
