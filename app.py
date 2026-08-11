@@ -277,9 +277,7 @@ if access_mode == "🛍️ Public Storefront":
                     generated_id = f"TF-WEB-{random.randint(1000, 9999)}"
                     timestamp_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                     
-                    initial_status = "Preorder - Awaiting Batch Restock" if cart.get("is_preorder", 0) == 1 else f"Awaiting Payment ({cart['payment_method']})"
-                    
-                    # Record Order in DB
+                    initial_status = "Preorder - Awaiting Batch Restock" if cart.get("is_preorder", 0) == 1 else f"Awaiting Payment ({cart['payment_ # Record Order in DB
                     conn = get_db_connection()
                     cursor = conn.cursor()
                     cursor.execute("""
