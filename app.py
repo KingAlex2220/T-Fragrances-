@@ -230,7 +230,7 @@ if access_mode == "🛍️ Public Storefront":
                 cust_phone = st.text_input("Phone Number:")
                 cust_address = st.text_area("Full Shipping / Delivery Address:", placeholder="Street, City, State, ZIP")
                 
-                                st.markdown("#### 4. Select Settlement Channel")
+                st.markdown("#### 4. Select Settlement Channel")
                 payment_method = st.selectbox(
                     "Payment / Settlement Channel:",
                     ["Zelle", "Cash App", "Venmo", "Apple Pay / Text Payment"],
