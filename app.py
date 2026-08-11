@@ -173,7 +173,7 @@ if access_mode == "🛍️ Public Storefront":
         
         with col_store_left:
             with st.container(border=True):
-                    st.markdown("#### 1. Select Your Line Segment")
+                    st.markdown("#### 1. Select Your Fragrance")
             cat_select = st.radio(
                 "Product Family:", 
                 ["Men's Premium Oils", "Women's Premium Oils", "Home & House Scents", "Custom / Full Catalog Request"], 
