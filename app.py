@@ -285,7 +285,7 @@ if access_mode == "🛍️ Public Storefront":
                     cursor.execute("""
                         INSERT INTO orders_v2 (order_id, timestamp, customer_name, phone_number, delivery_address, category, product_code, scent_name, quantity, payment_method, total_paid, status, order_type, is_preorder)
                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """), (generated_id, timestamp_str, cart['name'], cart['phone'], cart['address'], cart['category'], cart['code'], cart['scent'], cart['quantity'], cart['payment_method'], cart['total'], initial_status, "Online Store", cart.get("is_preorder", 0)))
+                    """, (generated_id, timestamp_str, cart['name'], cart['phone'], cart['address'], cart['category'], cart['code'], cart['scent'], cart['quantity'], cart['payment_method'], cart['total'], initial_status, "Online Store", cart.get("is_preorder", 0))
                     conn.commit()
                     conn.close()
                     
