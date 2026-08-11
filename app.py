@@ -287,8 +287,8 @@ if access_mode == "🛍️ Public Storefront":
                     VALUES (?, ?, ?, ...)
                 """)
 
-                    conn.commit()
-                    conn.close()
+                conn.commit()
+                conn.close()
                     
                     # Deduct from stock if regular stock
                     if cart.get("is_preorder", 0) == 0:
