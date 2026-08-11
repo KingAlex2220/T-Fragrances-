@@ -257,21 +257,21 @@ if access_mode == "🛍️ Public Storefront":
                 }
 
 
-        if "web_cart" in st.session_state:
-            cart = st.session_state.web_cart
-            st.info("⚙️ **Invoice Generated Successfully**")
-            
-            if cart.get("is_preorder", 0) == 1:
+if "web_cart" in st.session_state:
+    cart = st.session_state.web_cart
+    st.info("⚙️ **Invoice Generated Successfully**")
 
-                    st.warning("⭐ **PRIORITY PREORDER STATUS APPLIED**")
-                    
-            st.metric("Total Balance Due", f"${cart['total']:.2f}")
-                st.write(f"• **Purchaser:** {cart['name']}")
-                st.write(f"• **Phone:** {cart['phone']}")
-                st.write(f"• **Selection:** {cart['code']} - {cart['scent']}")
-                st.write(f"• **Quantity Ordered:** {cart['quantity']} bottle(s)")
-                st.write(f"• **Settlement Channel:** {cart['payment_method']}")
-                st.write(f"• **Order Type:** {'Priority Preorder' if cart.get('is_preorder') == 1 else 'Standard In-Stock'}")
+    if cart.get("is_preorder", 0) == 1:
+        st.warning("⭐ **PRIORITY PREORDER ORDER**")
+
+    st.metric("Total Balance", f"${cart['total']:.2f}")
+    st.write(f"• **Purchaser:** {cart['name']}")
+    st.write(f"• **Phone:** {cart['phone']}")
+    st.write(f"• **Selection:** {cart['category']} - {cart['scent']}")
+    st.write(f"• **Quantity:** {cart['quantity']}")
+    st.write(f"• **Settlement:** {cart['payment_method']}")
+    st.write(f"• **Order Type:** {'Preorder' if cart['is_preorder'] else 'Standard'}")
+
                 
                 confirm_label = "Confirm & Place Priority Preorder" if cart.get("is_preorder") == 1 else "Confirm & Place Order"
                 if st.button(confirm_label):
