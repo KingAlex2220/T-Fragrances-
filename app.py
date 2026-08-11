@@ -231,7 +231,7 @@ if access_mode == "🛍️ Public Storefront":
             st.markdown("#### 4. Select Settlement Channel")
             payment_method = st.selectbox(
                 "Payment / Settlement Channel:",
-                ["Zelle", "Cash App", "Venmo", "Apple Pay / Text Payment"],
+                ["Zelle", "Cash App", "Venmo",],
                 help="Choose your preferred payment method to view settlement details."
             )
             
@@ -349,16 +349,11 @@ if access_mode == "🛍️ Public Storefront":
                     * **Username:** `@TFragrances`
                     * **Phone Verification (Last 4):** `4196`
                     """)
-                else:  # Apple Pay / Text
-                    st.markdown(f"""
-                    Send **${order_total:.2f}** via **Apple Pay**:
-                    * **Send to Phone:** `863-236-4196`
-                    * **Note / Message:** Include your Order ID `{order_id}` in the text!
-                    """)
+           
                 
                 st.warning(f"⚠️ **IMPORTANT:** Always include your Order ID **`{order_id}`** in the payment note/memo!")
                 st.caption("Please screenshot/save this tracking page for your records.")
-    if st.button("Place New Order / Clear Cart"):
+    if st.button
             for key in ["web_cart", "last_order_id", "last_order_total", "last_order_method", "last_order_preorder"]:
                 st.session_state.pop(key, None)
             st.rerun()
