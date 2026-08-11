@@ -279,7 +279,7 @@ if access_mode == "🛍️ Public Storefront":
 
                 initial_status = "Preorder - Awaiting Batch Restock" if cart.get("is_preorder", 0) == 1 else "Awaiting Settlement"
 
-                                conn = get_db_connection()
+                conn = get_db_connection()
                 cursor = conn.cursor()
                 cursor.execute(
                     "INSERT INTO orders_v2 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
