@@ -323,7 +323,7 @@ if access_mode == "🛍️ Public Storefront":
                 del st.session_state.last_order_id
                 st.rerun()
 
-                    * **Cash Tag:** `$TFragrances`
+                      * **Cash Tag:** `$TFragrances`
                     * **Phone:** `863-236-4196`
                     """)
                 elif selected_method == "Venmo":
