@@ -298,7 +298,7 @@ if access_mode == "🛍️ Public Storefront":
                     st.session_state.web_cart = None
                     st.rerun()
                     
-            elif "last_order_id" in st.session_state:
+                if "last_order_id" in st.session_state:
                 if st.session_state.get("last_order_preorder", 0) == 1:
                     st.success(f"⭐ Priority Preorder Reserved! ID: {st.session_state.last_order_id}")
                 else:
