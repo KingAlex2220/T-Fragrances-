@@ -231,7 +231,7 @@ if access_mode == "🛍️ Public Storefront":
             st.markdown("#### 4. Select Settlement Channel")
             payment_method = st.selectbox(
                 "Payment / Settlement Channel:",
-                ["Zelle", "Cash App",],
+                ["Zelle", "Cash App", "Venmo", "Apple Pay / Text Payment"],
                 help="Choose your preferred payment method to view settlement details."
             )
             
@@ -298,34 +298,63 @@ if access_mode == "🛍️ Public Storefront":
                 st.session_state.pop("web_cart", None)
                 st.rerun()
 
-        # Check if an order was just confirmed
-                # Check if an order was just confirmed
-        if "last_order_id" in st.session_state:
-            if st.session_state.get("last_order_preorder", 0) == 1:
-                st.success(f"⭐ **Priority Preorder Reserved! ID:** `{st.session_state.last_order_id}`")
-            else:
-                st.success(f"🎉 **Order Placed! ID:** `{st.session_state.last_order_id}`")
+                cursor.execute(
+                    "INSERT INTO orders_v2 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    (generated_id, timestamp_str, cart['name'], cart['phone'], cart['address'], cart['category'], cart['code'], cart['scent'], cart['quantity'], cart['total'], cart['payment_method'], cart['is_preorder'], initial_status)
+                )
+                conn.commit()
+                conn.close()
 
-            selected_method = st.session_state.get("last_order_method", "Zelle")
-            order_total = st.session_state.get("last_order_total", 0.0)
-            order_id = st.session_state.last_order_id
+                # Deduct from stock if regular stock
+                if cart.get("is_preorder", 0) == 0:
+                    deduct_inventory(cart['code'], cart['quantity'])
 
-            st.markdown(f"### 💰 Send Payment via **{selected_method}**:")
-
-            if selected_method == "Zelle":
-                st.info(f"Send **${order_total:.2f}** via **Zelle**:\n\n• **Recipient Phone:** `863-236-4196`\n• **Name:** Alexander Thompson\n• **Memo:** Order `{order_id}`")
-            elif selected_method == "Cash App":
-                st.info(f"Send **${order_total:.2f}** via **Cash App**:\n\n• **Cashtag:** `$AlexanderThompson`\n• **Memo:** Order `{order_id}`")
-            
-            if st.button("Place Another Order"):
-                del st.session_state.last_order_id
+                st.session_state.last_order_id = generated_id
+                st.session_state.last_order_total = cart['total']
+                st.session_state.last_order_method = cart['payment_method']
+                st.session_state.last_order_preorder = cart.get("is_preorder", 0)
+                st.session_state.pop("web_cart", None)
                 st.rerun()
 
-                * **Cash Tag:** `$TFragrances`
+                    
+                if "last_order_id" in st.session_state:
+                 if st.session_state.get("last_order_preorder", 0) == 1:
+                    st.success(f"⭐ Priority Preorder Reserved! ID: {st.session_state.last_order_id}")
+                else:
+                    st.success(f"🎉 Order Placed! ID: {st.session_state.last_order_id}")
+                    
+                selected_method = st.session_state.get('last_order_method', 'Zelle')
+                order_total = st.session_state.get('last_order_total', PRICE_PER_BOTTLE)
+                order_id = st.session_state.last_order_id
+                
+                st.markdown(f"### 💰 Send Payment via **{selected_method}**:")
+                
+                if selected_method == "Zelle":
+                    st.markdown(f"""
+                    Send **${order_total:.2f}** via **Zelle**:
+                    * **Recipient Phone:** `863-236-4196`
+                    * **Name:** Alexander Thompson
+                    """)
+                    if os.path.exists(LOCAL_QR_IMG):
+                        st.image(LOCAL_QR_IMG, caption="Scan with your banking app to Zelle instantly.", width=300)
+                elif selected_method == "Cash App":
+                    st.markdown(f"""
+                    Send **${order_total:.2f}** via **Cash App**:
+                    * **Cash Tag:** `$TFragrances`
                     * **Phone:** `863-236-4196`
                     """)
-                
-                
+                elif selected_method == "Venmo":
+                    st.markdown(f"""
+                    Send **${order_total:.2f}** via **Venmo**:
+                    * **Username:** `@TFragrances`
+                    * **Phone Verification (Last 4):** `4196`
+                    """)
+                else:  # Apple Pay / Text
+                    st.markdown(f"""
+                    Send **${order_total:.2f}** via **Apple Pay**:
+                    * **Send to Phone:** `863-236-4196`
+                    * **Note / Message:** Include your Order ID `{order_id}` in the text!
+                    """)
                 
                 st.warning(f"⚠️ **IMPORTANT:** Always include your Order ID **`{order_id}`** in the payment note/memo!")
                 st.caption("Please screenshot/save this tracking page for your records.")
@@ -693,4 +722,4 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-st.markdown("<p style='text-align: center; color: #FFFFFF; font-size: 0.9rem; margin-top: 10px;'>© T Fragrances. All Rights Reserved.</p>", unsafe_allow_html=True))
+st.markdown("<p style='text-align: center; color: #FFFFFF; font-size: 0.9rem; margin-top: 10px;'>© T Fragrances. All Rights Reserved.</p>", unsafe_allow_html=True)
