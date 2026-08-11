@@ -257,11 +257,12 @@ if access_mode == "🛍️ Public Storefront":
                 }
 
 
+        if "web_cart" in st.session_state:
+            cart = st.session_state.web_cart
+            st.info("⚙️ **Invoice Generated Successfully**")
+            
+            if cart.get("is_preorder", 0) == 1:
 
-
-                st.info("⚙️ **Invoice Generated Successfully**")
-                
-                if cart.get("is_preorder", 0) == 1:
                     st.warning("⭐ **PRIORITY PREORDER STATUS APPLIED**")
                     
                 st.metric("Total Balance Due", f"${cart['total']:.2f}")
