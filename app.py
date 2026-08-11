@@ -342,14 +342,12 @@ if access_mode == "🛍️ Public Storefront":
                 st.warning(f"⚠️ **IMPORTANT:** Always include your Order ID **`{order_id}`** in the payment note/memo!")
                 st.caption("Please screenshot/save this tracking page for your records.")
                 
-                if st.button("Place New Order"):
-                    if "last_order_id" in st.session_state: del st.session_state.last_order_id
-                    if "last_order_total" in st.session_state: del st.session_state.last_order_total
-                    if "last_order_method" in st.session_state: del st.session_state.last_order_method
-                    if "last_order_preorder" in st.session_state: del st.session_state.last_order_preorder
-                    st.rerun()
-            else:
-                st.info("Select a scent and fill out details to view invoice configurations.")
+                        if st.button("Place New Order / Clear Cart"):
+            for key in ["web_cart", "last_order_id", "last_order_total", "last_order_method", "last_order_preorder"]:
+                st.session_state.pop(key, None)
+            st.rerun()
+    else:
+        st.info("Select a scent to generate an order preview.")
 
     with track_tab:
         st.subheader("📦 Real-Time Order Tracking")
