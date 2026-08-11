@@ -299,6 +299,7 @@ if access_mode == "🛍️ Public Storefront":
                 st.rerun()
 
         # Check if an order was just confirmed
+                # Check if an order was just confirmed
         if "last_order_id" in st.session_state:
             if st.session_state.get("last_order_preorder", 0) == 1:
                 st.success(f"⭐ **Priority Preorder Reserved! ID:** `{st.session_state.last_order_id}`")
@@ -309,8 +310,9 @@ if access_mode == "🛍️ Public Storefront":
             order_total = st.session_state.get("last_order_total", 0.0)
             order_id = st.session_state.last_order_id
 
-            st.markdown(f"### 💰 Send Payment via **{selected_method}**:")           
-               if selected_method == "Zelle":
+            st.markdown(f"### 💰 Send Payment via **{selected_method}**:")
+
+            if selected_method == "Zelle":
                 st.info(f"Send **${order_total:.2f}** via **Zelle**:\n\n• **Recipient Phone:** `863-236-4196`\n• **Name:** Alexander Thompson\n• **Memo:** Order `{order_id}`")
             elif selected_method == "Cash App":
                 st.info(f"Send **${order_total:.2f}** via **Cash App**:\n\n• **Cashtag:** `$AlexanderThompson`\n• **Memo:** Order `{order_id}`")
@@ -321,13 +323,6 @@ if access_mode == "🛍️ Public Storefront":
                 del st.session_state.last_order_id
                 st.rerun()
 
-                del st.session_state.last_order_id
-                st.rerun()
-
-                st.rerun()
-
-                st.markdown(f"""
-                    Send **${order_total:.2f}** via **Cash App**:
                     * **Cash Tag:** `$TFragrances`
                     * **Phone:** `863-236-4196`
                     """)
