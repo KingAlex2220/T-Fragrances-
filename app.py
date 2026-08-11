@@ -173,20 +173,44 @@ if access_mode == "🛍️ Public Storefront":
         
         with col_store_left:
             with st.container(border=True):
-                st.markdown("#### 1. Select Your Preferred Fragrance")
-                cat_select = st.radio("Product Family:", ["Men's Premium Oils", "Women's Premium Oils", "Home & House Scents", "Custom / Full Catalog Request"], horizontal=True)
-                active_list = men_catalog if cat_select == "Men's Premium Oils" else (women_catalog if cat_select == "Women's Premium Oils" else home_catalog)
-                    
+                            st.markdown("#### 1. Select Your Line Segment")
+            cat_select = st.radio(
+                "Product Family:", 
+                ["Men's Premium Oils", "Women's Premium Oils", "Home & House Scents", "Custom / Full Catalog Request"], 
+                horizontal=True
+            )
+
+            if cat_select == "Custom / Full Catalog Request":
+                st.info("✨ **Looking for a scent outside our signature collection?** Scan the QR code below or view our full master catalog, then type the name of the fragrance you want!")
+                
+                if os.path.exists(LOCAL_CATALOG_QR_IMG):
+                    st.image(LOCAL_CATALOG_QR_IMG, caption="Scan to view Full Extended Catalog", width=250)
+                
+                custom_scent_input = st.text_input("Type Fragrance Name & Brand (e.g., Creed Aventus / Tom Ford Lost Cherry):")
+                matching_obj = {
+                    "code": "CUSTOM-REQ",
+                    "scent": custom_scent_input.strip() if custom_scent_input.strip() else "Custom Catalog Request",
+                    "category": "Custom Request"
+                }
+                current_stock, initial_cap = 999, 999
+                is_preorder_item = True
+
+            else:
                 st.markdown("#### 2. Choose Your Scent & Size")
+                if cat_select == "Men's Premium Oils":
+                    active_list = men_catalog
+                elif cat_select == "Women's Premium Oils":
+                    active_list = women_catalog
+                else:
+                    active_list = home_catalog
+
                 selected_display = st.selectbox("Available Inventory Index:", [item["label"] for item in active_list])
                 matching_obj = next(item for item in active_list if item["label"] == selected_display)
-                
-                # Check current stock level
                 current_stock, initial_cap = get_item_stock(matching_obj["code"])
                 is_preorder_item = current_stock <= 0
-                
+
                 if is_preorder_item:
-                    st.info("⭐ **PRIORITY PREORDER ITEM:** Regular stock is currently reserved/sold out. Placing a order reserves your bottle in our upcoming priority batch!")
+                    st.info("⭐ **PRIORITY PREORDER ITEM:** Regular stock is currently reserved/sold out. Placing an order reserves your bottle in our upcoming priority batch!")
                 elif current_stock <= (initial_cap * 0.5):
                     st.warning(f"⚠️ Limited Regular Stock Remaining! (Only {current_stock} left)")
                 else:
