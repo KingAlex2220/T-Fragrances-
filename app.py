@@ -310,7 +310,7 @@ if access_mode == "🛍️ Public Storefront":
             order_id = st.session_state.last_order_id
 
             st.markdown(f"### 💰 Send Payment via **{selected_method}**:")           
-                if selected_method == "Zelle":
+              if selected_method == "Zelle":
                 st.info(f"Send **${order_total:.2f}** via **Zelle**:\n\n• **Recipient Phone:** `863-236-4196`\n• **Name:** Alexander Thompson\n• **Memo:** Order `{order_id}`")
             elif selected_method == "Cash App":
                 st.info(f"Send **${order_total:.2f}** via **Cash App**:\n\n• **Cashtag:** `$AlexanderThompson`\n• **Memo:** Order `{order_id}`")
