@@ -697,21 +697,11 @@ else:
 
 # --- GLOBAL FOOTER (LEGAL DISCLAIMER & COPYRIGHT) ---
 st.markdown("---")
-st.markdown(
-    """
-    <div style='font-size: 0.8rem; color: #64748B; text-align: justify; line-height: 1.4; margin-bottom: 20px;'>
-    <strong>LEGAL DISCLAIMER:</strong> T Fragrances competes with designer brands. It does not use their 
-    fragrances and is not associated or affiliated in any way with designer brands or their manufacturers. 
-    All trademarks are the property of their respective owners. We use designer names solely for comparative 
-    purposes to give customers an idea of scent character and olfactory notes.<br><br>
-    <strong>ALLERGY & SENSITIVITY NOTICE:</strong> Our products contain fragrance oils and ingredients that may cause skin irritation or allergic reactions in sensitive individuals. Please review ingredient lists carefully and perform a patch test prior to full application. Discontinue use immediately if irritation occurs. T Fragrances is not responsible for any adverse reactions.
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+st.markdown("""
+<div style='font-size: 0.8rem; color: #64748B; text-align: justify; line-height: 1.4;'>
+<strong>LEGAL DISCLAIMER:</strong> T Fragrances competes with designer brands. It does not use their fragrances and is not associated or affiliated in any way with designer brands or their manufacturers. All trademarks are the property of their respective owners. We use designer names solely for comparison purposes to give customers an idea of scent character and olfactory notes.<br><br>
+<strong>ALLERGY & SENSITIVITY NOTICE:</strong> Our products contain fragrance oils and essential oils.
+</div>
+""", unsafe_allow_html=True)
 
-st.markdown(
-    """,
-    <p style='text-align: center; color: #FFFFFF; font-size: 0.9rem; margin-top: 10px;'>
-    © T Fragrances. All Rights Reserved.
-  
+st.markdown("<p style='text-align: center; color: #FFFFFF; font-size: 0.9rem; margin-top: 10px;'>© T Fragrances. All Rights Reserved.</p>", unsafe_allow_html=True)
