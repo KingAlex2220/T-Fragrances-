@@ -309,30 +309,17 @@ if access_mode == "🛍️ Public Storefront":
             order_total = st.session_state.get("last_order_total", 0.0)
             order_id = st.session_state.last_order_id
 
-            st.markdown(f"### 💰 Send Payment via **{selected_method}**:")
-
-            if selected_method == "Zelle":
-                st.markdown(f"""
-Send **${order_total:.2f}** via **Zelle**:
-* **Recipient Phone:** `863-236-4196`
-* **Name:** Alexander Thompson
-* **Memo:** Order `{order_id}`
-""")
+            st.markdown(f"### 💰 Send Payment via **{selected_method}**:")            if selected_method == "Zelle":
+                st.info(f"Send **${order_total:.2f}** via **Zelle**:\n\n• **Recipient Phone:** `863-236-4196`\n• **Name:** Alexander Thompson\n• **Memo:** Order `{order_id}`")
             elif selected_method == "Cash App":
-                st.markdown(f"""
-Send **${order_total:.2f}** via **Cash App**:
-* **Cashtag:** `$AlexanderThompson`
-* **Memo:** Order `{order_id}`
-""")
+                st.info(f"Send **${order_total:.2f}** via **Cash App**:\n\n• **Cashtag:** `$AlexanderThompson`\n• **Memo:** Order `{order_id}`")
             elif selected_method == "Venmo":
-                st.markdown(f"""
-Send **${order_total:.2f}** via **Venmo**:
-* **Handle:** `@AlexanderThompson`
-* **Memo:** Order `{order_id}`
-""")
+                st.info(f"Send **${order_total:.2f}** via **Venmo**:\n\n• **Handle:** `@AlexanderThompson`\n• **Memo:** Order `{order_id}`")
 
             if st.button("Place Another Order"):
                 del st.session_state.last_order_id
+                st.rerun()
+
                 st.rerun()
 
                 st.markdown(f"""
