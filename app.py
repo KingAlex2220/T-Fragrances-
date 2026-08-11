@@ -173,7 +173,7 @@ if access_mode == "🛍️ Public Storefront":
         
         with col_store_left:
             with st.container(border=True):
-                            st.markdown("#### 1. Select Your Line Segment")
+                    st.markdown("#### 1. Select Your Line Segment")
             cat_select = st.radio(
                 "Product Family:", 
                 ["Men's Premium Oils", "Women's Premium Oils", "Home & House Scents", "Custom / Full Catalog Request"], 
@@ -216,51 +216,47 @@ if access_mode == "🛍️ Public Storefront":
                 else:
                     st.caption(f"In Stock ({current_stock} available)")
 
-                # Quantity selection
-                max_selectable = 50 if is_preorder_item else max(1, current_stock)
-                web_qty = st.number_input("Select Quantity:", min_value=1, max_value=max_selectable, value=1, step=1, key="web_quantity_select")
-                
-                if os.path.exists(LOCAL_BOTTLE_IMG):
-                    st.image(LOCAL_BOTTLE_IMG, caption=f"Signature Presentation Model — Featured Scent: {matching_obj['scent']}", use_container_width=True)
-                else:
-                    st.info("💡 Image loading configuration pending sync.")
-                
-                st.markdown("#### 3. Shipping & Contact Information")
-                cust_name = st.text_input("Full Name:")
-                cust_phone = st.text_input("Phone Number:")
-                cust_address = st.text_area("Full Shipping / Delivery Address:", placeholder="Street, City, State, ZIP")
-                
-                st.markdown("#### 4. Select Settlement Channel")
-                payment_method = st.selectbox(
-                    "Payment / Settlement Channel:",
-                    ["Zelle", "Cash App", "Venmo", "Apple Pay / Text Payment"],
-                    help="Choose your preferred payment method to view settlement details."
-                )
-                
-                button_label = "Review Priority Preorder Invoice" if is_preorder_item else "Review Order Invoice"
-                submit_order = st.button(button_label, type="primary")
-                
-            if submit_order:
-                if not cust_name.strip() or not cust_phone.strip() or not cust_address.strip():
-                    st.error("⚠️ Please fill out your Name, Phone Number, and Shipping Address.")
-                else:
-                    final_calculated_price, _, _ = calculate_order_total(web_qty)
-                    st.session_state.web_cart = {
-                        "name": cust_name.strip(),
-                        "phone": cust_phone.strip(),
-                        "address": cust_address.strip(),
-                        "category": cat_select,
-                        "code": matching_obj["code"],
-                        "scent": matching_obj["scent"],
-                        "quantity": int(web_qty),
-                        "total": float(final_calculated_price),
-                        "payment_method": payment_method,
-                        "is_preorder": 1 if is_preorder_item else 0
-                    }
+            # Quantity selection
+            max_selectable = 50 if is_preorder_item else max(1, current_stock)
+            web_qty = st.number_input("Quantity:", min_value=1, max_value=max_selectable, value=1, step=1)
 
-            st.markdown("#### 🧾 Order Invoice & Payment Breakdown")
-            if "web_cart" in st.session_state and st.session_state.web_cart is not None:
-                cart = st.session_state.web_cart
+            if os.path.exists(LOCAL_BOTTLE_IMG):
+                st.image(LOCAL_BOTTLE_IMG, use_container_width=True)
+
+            st.markdown("#### 3. Shipping & Contact Info")
+            cust_name = st.text_input("Full Name:")
+            cust_phone = st.text_input("Phone Number:")
+            cust_address = st.text_area("Shipping Address:")
+
+            st.markdown("#### 4. Select Settlement Channel")
+            payment_method = st.selectbox(
+                "Payment / Settlement Channel:",
+                ["Zelle", "Cash App", "Venmo", "Apple Pay / Text Payment"],
+                help="Choose your preferred payment method to view settlement details."
+            )
+            
+            button_label = "Review Priority Preorder Invoice" if is_preorder_item else "Review Order Invoice"
+            submit_order = st.button(button_label, type="primary")
+
+        # Process order form outside container block
+        if submit_order:
+            if not cust_name.strip() or not cust_phone.strip() or not cust_address.strip():
+                st.error("⚠️ Please fill out your Name, Phone Number, and Shipping Address.")
+            else:
+                final_calculated_price, _, _ = calculate_order_total(web_qty)
+                st.session_state.web_cart = {
+                    "name": cust_name.strip(),
+                    "phone": cust_phone.strip(),
+                    "address": cust_address.strip(),
+                    "category": cat_select,
+                    "code": matching_obj["code"],
+                    "scent": matching_obj["scent"],
+                    "quantity": int(web_qty),
+                    "total": float(final_calculated_price),
+                    "payment_method": payment_method,
+                    "is_preorder": 1 if is_preorder_item else 0
+                }
+
                 st.info("⚙️ **Invoice Generated Successfully**")
                 
                 if cart.get("is_preorder", 0) == 1:
