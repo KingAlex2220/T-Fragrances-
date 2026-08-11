@@ -239,7 +239,7 @@ if access_mode == "🛍️ Public Storefront":
             submit_order = st.button(button_label, type="primary")
 
         # Process order form outside container block
-                if submit_order:
+            if submit_order:
             if not cust_name.strip() or not cust_phone.strip() or not cust_address.strip():
                 st.error("⚠️ Please fill out your Name, Phone Number, and Shipping Address.")
             else:
