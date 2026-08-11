@@ -279,6 +279,25 @@ if access_mode == "🛍️ Public Storefront":
 
                 initial_status = "Preorder - Awaiting Batch Restock" if cart.get("is_preorder", 0) == 1 else "Awaiting Settlement"
 
+                                conn = get_db_connection()
+                cursor = conn.cursor()
+                cursor.execute(
+                    "INSERT INTO orders_v2 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    (generated_id, timestamp_str, cart['name'], cart['phone'], cart['address'], cart['category'], cart['code'], cart['scent'], cart['quantity'], cart['total'], cart['payment_method'], cart['is_preorder'], initial_status)
+                )
+                conn.commit()
+                conn.close()
+
+                # Deduct from stock if regular stock
+                if cart.get("is_preorder", 0) == 0:
+                    deduct_inventory(cart['code'], cart['quantity'])
+
+                st.session_state.last_order_id = generated_id
+                st.session_state.last_order_total = cart['total']
+                st.session_state.last_order_method = cart['payment_method']
+                st.session_state.last_order_preorder = cart.get("is_preorder", 0)
+                st.session_state.pop("web_cart", None)
+                st.rerun()
                 conn = get_db_connection()
                 cursor = conn.cursor()
                 cursor.execute(
@@ -288,17 +307,17 @@ if access_mode == "🛍️ Public Storefront":
                 conn.commit()
                 conn.close()
 
-                    
-                    # Deduct from stock if regular stock
-                        if cart.get("is_preorder", 0) == 0:
-                        deduct_inventory(cart['code'], cart['quantity'])
-                    
-                    st.session_state.last_order_id = generated_id
-                    st.session_state.last_order_total = cart['total']
-                    st.session_state.last_order_method = cart['payment_method']
-                    st.session_state.last_order_preorder = cart.get("is_preorder", 0)
-                    st.session_state.web_cart = None
-                    st.rerun()
+                # Deduct from stock if regular stock
+                if cart.get("is_preorder", 0) == 0:
+                    deduct_inventory(cart['code'], cart['quantity'])
+
+                st.session_state.last_order_id = generated_id
+                st.session_state.last_order_total = cart['total']
+                st.session_state.last_order_method = cart['payment_method']
+                st.session_state.last_order_preorder = cart.get("is_preorder", 0)
+                st.session_state.pop("web_cart", None)
+                st.rerun()
+
                     
                 if "last_order_id" in st.session_state:
                  if st.session_state.get("last_order_preorder", 0) == 1:
