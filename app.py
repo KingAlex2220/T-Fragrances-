@@ -139,6 +139,9 @@ def restock_item(product_code, add_qty):
 PRICE_PER_BOTTLE = 45.00
 LOCAL_BOTTLE_IMG = "images/bottles.png"
 LOCAL_QR_IMG = "images/zelle_qr.png"
+LOCAL_CATALOG_QR_IMG = "images/catalog_qr.png" 
+
+
 
 # --- SIDEBAR ACCESS INTERFACE (SECURED & HIDDEN BY DEFAULT) ---
 st.sidebar.markdown("### 🔒 System Portal")
