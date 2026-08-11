@@ -230,10 +230,10 @@ if access_mode == "🛍️ Public Storefront":
                 cust_phone = st.text_input("Phone Number:")
                 cust_address = st.text_area("Full Shipping / Delivery Address:", placeholder="Street, City, State, ZIP")
                 
-                st.markdown("#### 4. Select Settlement Channel")
+                                st.markdown("#### 4. Select Settlement Channel")
                 payment_method = st.selectbox(
                     "Payment / Settlement Channel:",
-                    ["Zelle"],
+                    ["Zelle", "Cash App", "Venmo", "Apple Pay / Text Payment"],
                     help="Choose your preferred payment method to view settlement details."
                 )
                 
@@ -244,6 +244,7 @@ if access_mode == "🛍️ Public Storefront":
                 if not cust_name.strip() or not cust_phone.strip() or not cust_address.strip():
                     st.error("⚠️ Please fill out your Name, Phone Number, and Shipping Address.")
                 else:
+                    final_calculated_price, _, _ = calculate_order_total(web_qty)
                     st.session_state.web_cart = {
                         "name": cust_name.strip(),
                         "phone": cust_phone.strip(),
@@ -252,12 +253,11 @@ if access_mode == "🛍️ Public Storefront":
                         "code": matching_obj["code"],
                         "scent": matching_obj["scent"],
                         "quantity": int(web_qty),
-                        "total": float(PRICE_PER_BOTTLE * web_qty),
+                        "total": float(final_calculated_price),
                         "payment_method": payment_method,
                         "is_preorder": 1 if is_preorder_item else 0
                     }
- 
-        with col_store_right:
+
             st.markdown("#### 🧾 Order Invoice & Payment Breakdown")
             if "web_cart" in st.session_state and st.session_state.web_cart is not None:
                 cart = st.session_state.web_cart
