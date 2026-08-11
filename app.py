@@ -341,8 +341,7 @@ if access_mode == "🛍️ Public Storefront":
                 
                 st.warning(f"⚠️ **IMPORTANT:** Always include your Order ID **`{order_id}`** in the payment note/memo!")
                 st.caption("Please screenshot/save this tracking page for your records.")
-                
-                        if st.button("Place New Order / Clear Cart"):
+    if st.button("Place New Order / Clear Cart"):
             for key in ["web_cart", "last_order_id", "last_order_total", "last_order_method", "last_order_preorder"]:
                 st.session_state.pop(key, None)
             st.rerun()
