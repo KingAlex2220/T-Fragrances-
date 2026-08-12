@@ -335,8 +335,7 @@ with tabs[0]:
         
         with col:
             with st.container(border=True):
-                # Replace line 338 with this check:
-image_path = item.get("image_url")
+            image_path = item.get("image_url")
 if image_path and (image_path.startswith("http") or os.path.exists(image_path)):
     img_col, text_col = st.columns([1, 1.3])
     with img_col:
