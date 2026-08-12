@@ -111,7 +111,7 @@ FRAGRANCE_CATALOG = [
             "Inspired by Sauvage profile — Crisp bergamot, pepper, and rich"
             " ambroxan."
         ),
-        "image_url": "savage_spirit.png",  # <-- Configured for side-by-side view
+        "image_url": "savage_spirit.png",
     },
     {
         "id": "m02",
@@ -876,7 +876,7 @@ def save_order_to_db(
   c = conn.cursor()
   order_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
   cycle_id = get_current_30_day_cycle()
-  status = "Priority Preorder Pending" if is_priority else "Pending Payment"
+  status = "QR Request / Priority Preorder" if is_priority else "Pending Payment"
 
   c.execute(
       """
@@ -1114,7 +1114,7 @@ if priority_only:
 
 tabs = st.tabs([
     "🛍️ Browse Catalog",
-    "✨ Custom Request Sheet",
+    "📲 QR Request & Preorder Sheet",
     "🛒 Checkout",
     "🔍 Customer Order Lookup",
     "🔒 Master Admin & Inventory",
@@ -1174,57 +1174,102 @@ with tabs[0]:
         )
 
 # ------------------------------------------
-# TAB 2: CUSTOM REQUEST SHEET
+# TAB 2: QR REQUEST & PREORDER SHEET
 # ------------------------------------------
 with tabs[1]:
-  st.header("✨ Custom Request & Selection Sheet")
+  st.header("📲 QR Code Impression Request & Preorder Sheet")
   st.write(
-      "Browse the complete list below, check the boxes next to the impression"
-      " bottles you want to add, and submit your custom bundle request!"
+      "Scanned via QR? Welcome! Use the complete impression list below to"
+      " check off any desired scent profiles you want to request or pre-order,"
+      " regardless of current on-hand stock."
   )
 
-  with st.form("custom_request_checklist_form"):
-    cust_name = st.text_input("Your Full Name *")
-    cust_contact = st.text_input("Email or Phone Number *")
+  with st.form("qr_request_checklist_form"):
+    qr_cust_name = st.text_input("Your Full Name *")
+    qr_cust_contact = st.text_input("Email or Phone Number *")
+    qr_shipping_address = st.text_input("Delivery / Shipping Address *")
 
-    st.markdown("### Select Desired Fragrances ($45.00 each)")
+    st.markdown("---")
+    st.markdown("### Select Desired Impression Bottles ($45.00 Each)")
 
-    selected_custom_items = []
+    qr_selected_items = []
 
+    # Display full master catalog for requests
     for item in FRAGRANCE_CATALOG:
       is_checked = st.checkbox(
           f"**{item['name']}** ({item['gender']}'s — {item['category']}) —"
           f" *{item['notes']}*",
-          key=f"chk_{item['id']}",
+          key=f"qr_chk_{item['id']}",
       )
       if is_checked:
-        selected_custom_items.append(item)
+        qr_selected_items.append(item)
 
-    custom_notes = st.text_area(
-        "Additional Custom Instructions or Preferences (Optional)"
+    qr_payment_method = st.selectbox(
+        "Preferred Settlement Method",
+        ["Cash App", "Zelle", "Venmo", "Cash POS (In-Person)"],
     )
+    qr_notes = st.text_area("Additional Request Notes / Custom Preferences")
 
-    submit_custom = st.form_submit_button("Submit Custom Request Order")
+    qr_submit = st.form_submit_button("Submit QR Request / Preorder")
 
-    if submit_custom:
-      if not (cust_name and cust_contact):
-        st.error("Please enter your name and contact details.")
-      elif not selected_custom_items:
-        st.error("Please select at least one fragrance using the checkboxes.")
+    if qr_submit:
+      if not (qr_cust_name and qr_cust_contact and qr_shipping_address):
+        st.error(
+            "Please fill in your name, contact details, and shipping address."
+        )
+      elif not qr_selected_items:
+        st.error(
+            "Please check at least one impression bottle from the list to"
+            " submit a request."
+        )
       else:
-        for item in selected_custom_items:
-          if item["id"] in st.session_state.cart:
-            st.session_state.cart[item["id"]] += 1
-          else:
-            st.session_state.cart[item["id"]] = 1
+        # Build summary and totals for the QR request
+        qr_summary_list = [f"1x {item['name']}" for item in qr_selected_items]
+        qr_items_str = ", ".join(qr_summary_list)
+        qr_qty = len(qr_selected_items)
+        qr_subtotal = qr_qty * 45.0
+
+        qr_discount = 0.0
+        if qr_subtotal >= 100.0:
+          qr_discount = 0.20
+        elif qr_qty >= 3:
+          qr_discount = 0.15
+        elif qr_qty == 2:
+          qr_discount = 0.10
+
+        qr_final_total = qr_subtotal * (1 - qr_discount)
+
+        # Build cart items dictionary for database deduction/tracking
+        qr_cart_dict = {}
+        for item in qr_selected_items:
+          qr_cart_dict[item["id"]] = qr_cart_dict.get(item["id"], 0) + 1
+
+        save_order_to_db(
+            name=qr_cust_name,
+            email=qr_cust_contact,
+            phone=qr_cust_contact,
+            address=qr_shipping_address,
+            items_summary=qr_items_str,
+            qty=qr_qty,
+            subtotal=qr_subtotal,
+            discount=qr_discount,
+            total=qr_final_total,
+            payment_method=qr_payment_method,
+            is_priority=1,  # QR requests default to priority preorder handling
+            notes=(
+                "QR Code Request Form. " + (qr_notes if qr_notes else "")
+            ),
+            cart_items=qr_cart_dict,
+        )
 
         st.success(
-            f"Successfully added {len(selected_custom_items)} item(s) to your"
-            " shopping bag from the checklist!"
+            f"Success! Your request for {qr_qty} bottle(s) has been submitted"
+            f" for {qr_cust_name}."
         )
         st.info(
-            "Head over to the **Checkout** tab to review totals and complete"
-            " your payment."
+            f"Please complete your settlement of **${qr_final_total:.2f}** via"
+            f" **{qr_payment_method}** using the payment handles in the"
+            " sidebar."
         )
 
 # ------------------------------------------
