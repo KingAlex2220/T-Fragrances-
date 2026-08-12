@@ -21,15 +21,71 @@ def get_db_connection():
     conn.row_factory = sqlite3.Row
     return conn
 
-# --- EMBEDDED MASTER CATALOG ---
+# --- EMBEDDED MASTER CATALOG (FULL 60 IMPRESSIONS: 30 MEN / 30 WOMEN) ---
 men_catalog = [
-    {"code": "NO-1", "label": "No 1 | No 1 Sauvage Blend", "scent": "No 1 Sauvage Blend", "category": "Men's Premium Oils"},
-    {"code": "NO-4", "label": "No 4 | No 4 Aventus Blend", "scent": "No 4 Aventus Blend", "category": "Men's Premium Oils"},
+    {"code": "NO-1", "label": "No 1 | Sauvage Blend", "scent": "Sauvage Blend", "category": "Men's Premium Oils"},
+    {"code": "NO-4", "label": "No 4 | Aventus Blend", "scent": "Aventus Blend", "category": "Men's Premium Oils"},
+    {"code": "NO-5", "label": "No 5 | Bleu de Chanel Blend", "scent": "Bleu de Chanel Blend", "category": "Men's Premium Oils"},
+    {"code": "NO-6", "label": "No 6 | Acqua di Giò Blend", "scent": "Acqua di Giò Blend", "category": "Men's Premium Oils"},
+    {"code": "NO-7", "label": "No 7 | Eros Blend", "scent": "Eros Blend", "category": "Men's Premium Oils"},
+    {"code": "NO-8", "label": "No 8 | One Million Blend", "scent": "One Million Blend", "category": "Men's Premium Oils"},
+    {"code": "NO-9", "label": "No 9 | Spicebomb Blend", "scent": "Spicebomb Blend", "category": "Men's Premium Oils"},
+    {"code": "NO-10", "label": "No 10 | YSL Y Blend", "scent": "YSL Y Blend", "category": "Men's Premium Oils"},
+    {"code": "NO-11", "label": "No 11 | Tom Ford Oud Wood Blend", "scent": "Tom Ford Oud Wood Blend", "category": "Men's Premium Oils"},
+    {"code": "NO-12", "label": "No 12 | Chrome Legend Blend", "scent": "Chrome Legend Blend", "category": "Men's Premium Oils"},
+    {"code": "NO-13", "label": "No 13 | Gucci Guilty Blend", "scent": "Gucci Guilty Blend", "category": "Men's Premium Oils"},
+    {"code": "NO-14", "label": "No 14 | Bvlgari Aqva Blend", "scent": "Bvlgari Aqva Blend", "category": "Men's Premium Oils"},
+    {"code": "NO-15", "label": "No 15 | Playboy New York Blend", "scent": "Playboy New York Blend", "category": "Men's Premium Oils"},
+    {"code": "NO-16", "label": "No 16 | Invictus Blend", "scent": "Invictus Blend", "category": "Men's Premium Oils"},
+    {"code": "NO-17", "label": "No 17 | Creed Silver Mountain Water Blend", "scent": "Creed Silver Mountain Water Blend", "category": "Men's Premium Oils"},
+    {"code": "NO-31", "label": "No 31 | Tobacco Vanille Blend", "scent": "Tobacco Vanille Blend", "category": "Men's Premium Oils"},
+    {"code": "NO-32", "label": "No 32 | Le Male Blend", "scent": "Le Male Blend", "category": "Men's Premium Oils"},
+    {"code": "NO-33", "label": "No 33 | Polo Red Blend", "scent": "Polo Red Blend", "category": "Men's Premium Oils"},
+    {"code": "NO-34", "label": "No 34 | Santal 33 Blend", "scent": "Santal 33 Blend", "category": "Men's Premium Oils"},
+    {"code": "NO-35", "label": "No 35 | Wanted Blend", "scent": "Wanted Blend", "category": "Men's Premium Oils"},
+    {"code": "NO-36", "label": "No 36 | Gentleman Blend", "scent": "Gentleman Blend", "category": "Men's Premium Oils"},
+    {"code": "NO-37", "label": "No 37 | Light Blue Pour Homme Blend", "scent": "Light Blue Pour Homme Blend", "category": "Men's Premium Oils"},
+    {"code": "NO-38", "label": "No 38 | Allure Homme Sport Blend", "scent": "Allure Homme Sport Blend", "category": "Men's Premium Oils"},
+    {"code": "NO-39", "label": "No 39 | L'Homme Ideal Blend", "scent": "L'Homme Ideal Blend", "category": "Men's Premium Oils"},
+    {"code": "NO-40", "label": "No 40 | Diesel Only The Brave Blend", "scent": "Diesel Only The Brave Blend", "category": "Men's Premium Oils"},
+    {"code": "NO-41", "label": "No 41 | Montblanc Legend Blend", "scent": "Montblanc Legend Blend", "category": "Men's Premium Oils"},
+    {"code": "NO-42", "label": "No 42 | Prada L'Homme Blend", "scent": "Prada L'Homme Blend", "category": "Men's Premium Oils"},
+    {"code": "NO-43", "label": "No 43 | Valentino Uomo Born In Roma Blend", "scent": "Valentino Uomo Born In Roma Blend", "category": "Men's Premium Oils"},
+    {"code": "NO-44", "label": "No 44 | Bad Boy Blend", "scent": "Bad Boy Blend", "category": "Men's Premium Oils"},
+    {"code": "NO-45", "label": "No 45 | 1 Million Lucky Blend", "scent": "1 Million Lucky Blend", "category": "Men's Premium Oils"},
 ]
 
 women_catalog = [
-    {"code": "NO-2", "label": "No 2 | No 2 Good Girl Blend", "scent": "No 2 Good Girl Blend", "category": "Women's Premium Oils"},
-    {"code": "NO-3", "label": "No 3 | No 3 Rouge 540 Blend", "scent": "No 3 Rouge 540 Blend", "category": "Women's Premium Oils"},
+    {"code": "NO-2", "label": "No 2 | Good Girl Blend", "scent": "Good Girl Blend", "category": "Women's Premium Oils"},
+    {"code": "NO-3", "label": "No 3 | Baccarat Rouge 540 Blend", "scent": "Baccarat Rouge 540 Blend", "category": "Women's Premium Oils"},
+    {"code": "NO-18", "label": "No 18 | Black Opium Blend", "scent": "Black Opium Blend", "category": "Women's Premium Oils"},
+    {"code": "NO-19", "label": "No 19 | La Vie Est Belle Blend", "scent": "La Vie Est Belle Blend", "category": "Women's Premium Oils"},
+    {"code": "NO-20", "label": "No 20 | Coco Mademoiselle Blend", "scent": "Coco Mademoiselle Blend", "category": "Women's Premium Oils"},
+    {"code": "NO-21", "label": "No 21 | Flowerbomb Blend", "scent": "Flowerbomb Blend", "category": "Women's Premium Oils"},
+    {"code": "NO-22", "label": "No 22 | J'adore Blend", "scent": "J'adore Blend", "category": "Women's Premium Oils"},
+    {"code": "NO-23", "label": "No 23 | Miss Dior Blend", "scent": "Miss Dior Blend", "category": "Women's Premium Oils"},
+    {"code": "NO-24", "label": "No 24 | Versace Bright Crystal Blend", "scent": "Versace Bright Crystal Blend", "category": "Women's Premium Oils"},
+    {"code": "NO-25", "label": "No 25 | Alien Blend", "scent": "Alien Blend", "category": "Women's Premium Oils"},
+    {"code": "NO-26", "label": "No 26 | Daisy Blend", "scent": "Daisy Blend", "category": "Women's Premium Oils"},
+    {"code": "NO-27", "label": "No 27 | Chanel No 5 Blend", "scent": "Chanel No 5 Blend", "category": "Women's Premium Oils"},
+    {"code": "NO-28", "label": "No 28 | Delina Blend", "scent": "Delina Blend", "category": "Women's Premium Oils"},
+    {"code": "NO-29", "label": "No 29 | Lost Cherry Blend", "scent": "Lost Cherry Blend", "category": "Women's Premium Oils"},
+    {"code": "NO-30", "label": "No 30 | Love Don't Be Shy Blend", "scent": "Love Don't Be Shy Blend", "category": "Women's Premium Oils"},
+    {"code": "NO-46", "label": "No 46 | Si Blend", "scent": "Si Blend", "category": "Women's Premium Oils"},
+    {"code": "NO-47", "label": "No 47 | Bombshell Blend", "scent": "Bombshell Blend", "category": "Women's Premium Oils"},
+    {"code": "NO-48", "label": "No 48 | Hypnotic Poison Blend", "scent": "Hypnotic Poison Blend", "category": "Women's Premium Oils"},
+    {"code": "NO-49", "label": "No 49 | Libre Blend", "scent": "Libre Blend", "category": "Women's Premium Oils"},
+    {"code": "NO-50", "label": "No 50 | Chance Eau Tendre Blend", "scent": "Chance Eau Tendre Blend", "category": "Women's Premium Oils"},
+    {"code": "NO-51", "label": "No 51 | Mon Guerlain Blend", "scent": "Mon Guerlain Blend", "category": "Women's Premium Oils"},
+    {"code": "NO-52", "label": "No 52 | Angel Blend", "scent": "Angel Blend", "category": "Women's Premium Oils"},
+    {"code": "NO-53", "label": "No 53 | Light Blue Blend", "scent": "Light Blue Blend", "category": "Women's Premium Oils"},
+    {"code": "NO-54", "label": "No 54 | Pure Poison Blend", "scent": "Pure Poison Blend", "category": "Women's Premium Oils"},
+    {"code": "NO-55", "label": "No 55 | Prada Paradoxe Blend", "scent": "Prada Paradoxe Blend", "category": "Women's Premium Oils"},
+    {"code": "NO-56", "label": "No 56 | Devotion Blend", "scent": "Devotion Blend", "category": "Women's Premium Oils"},
+    {"code": "NO-57", "label": "No 57 | Sol de Janeiro Cheirosa 68 Blend", "scent": "Sol de Janeiro Cheirosa 68 Blend", "category": "Women's Premium Oils"},
+    {"code": "NO-58", "label": "No 58 | L'Interdit Blend", "scent": "L'Interdit Blend", "category": "Women's Premium Oils"},
+    {"code": "NO-59", "label": "No 59 | My Way Blend", "scent": "My Way Blend", "category": "Women's Premium Oils"},
+    {"code": "NO-60", "label": "No 60 | Omnia Crystalline Blend", "scent": "Omnia Crystalline Blend", "category": "Women's Premium Oils"},
 ]
 
 home_catalog = [
@@ -279,11 +335,11 @@ if access_mode == "🛍️ Public Storefront":
                         st.success(f"🎉 **20% Bulk Savings Applied:** -${disc_amt:.2f}")
                     st.metric("Cart Subtotal", f"${final_tot:.2f}")
 
-    # TAB 2: AMAZON-STYLE CART CHECKOUT PAGE
+    # TAB 2: SHOPPING CART CHECKOUT PAGE
     with cart_tab:
         st.subheader("🛒 Shopping Cart & Checkout")
         if not st.session_state.cart_items:
-            st.info("Your Amazon-style cart is empty. Please select fragrances from the 'Order Online' tab!")
+            st.info("Your shopping cart is empty. Please select fragrances from the 'Order Online' tab!")
         else:
             col_cart_list, col_checkout_summary = st.columns([3, 2])
             
