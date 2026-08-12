@@ -1114,7 +1114,7 @@ if priority_only:
 
 tabs = st.tabs([
     "🛍️ Browse Catalog",
-    "📲 QR Request & Preorder Sheet",
+    "📲 QR Code Request Portal",
     "🛒 Checkout",
     "🔍 Customer Order Lookup",
     "🔒 Master Admin & Inventory",
@@ -1174,35 +1174,34 @@ with tabs[0]:
         )
 
 # ------------------------------------------
-# TAB 2: QR REQUEST & PREORDER SHEET
+# TAB 2: QR CODE REQUEST PORTAL
 # ------------------------------------------
 with tabs[1]:
-  st.header("📲 QR Code Impression Request & Preorder Sheet")
-  st.write(
-      "Scanned via QR? Welcome! Use the complete impression list below to"
-      " check off any desired scent profiles you want to request or pre-order,"
-      " regardless of current on-hand stock."
+  st.header("📲 QR Code Impression Request Portal")
+  st.info(
+      "✨ **Notice:** You are ordering 100% oil-based designer style impressions"
+      " of the products you see scanned from the QR code ($45.00 per bottle)."
   )
 
-  with st.form("qr_request_checklist_form"):
+  with st.form("qr_request_line_form"):
     qr_cust_name = st.text_input("Your Full Name *")
     qr_cust_contact = st.text_input("Email or Phone Number *")
     qr_shipping_address = st.text_input("Delivery / Shipping Address *")
 
     st.markdown("---")
-    st.markdown("### Select Desired Impression Bottles ($45.00 Each)")
+    st.markdown("### Request Line")
+    st.write(
+        "Simply type out the name or impression you want to request from the"
+        " catalog view, along with the quantity desired."
+    )
 
-    qr_selected_items = []
-
-    # Display full master catalog for requests
-    for item in FRAGRANCE_CATALOG:
-      is_checked = st.checkbox(
-          f"**{item['name']}** ({item['gender']}'s — {item['category']}) —"
-          f" *{item['notes']}*",
-          key=f"qr_chk_{item['id']}",
-      )
-      if is_checked:
-        qr_selected_items.append(item)
+    qr_item_requests = st.text_area(
+        "What impressions would you like to request? (e.g., 2x Savage Spirit"
+        " Blend, 1x Crystal Rouge 540) *"
+    )
+    qr_total_qty = st.number_input(
+        "Total Number of Bottles Requested", min_value=1, value=1
+    )
 
     qr_payment_method = st.selectbox(
         "Preferred Settlement Method",
@@ -1210,61 +1209,54 @@ with tabs[1]:
     )
     qr_notes = st.text_area("Additional Request Notes / Custom Preferences")
 
-    qr_submit = st.form_submit_button("Submit QR Request / Preorder")
+    qr_submit = st.form_submit_button("Submit QR Impression Request")
 
     if qr_submit:
       if not (qr_cust_name and qr_cust_contact and qr_shipping_address):
         st.error(
             "Please fill in your name, contact details, and shipping address."
         )
-      elif not qr_selected_items:
+      elif not qr_item_requests:
         st.error(
-            "Please check at least one impression bottle from the list to"
-            " submit a request."
+            "Please specify the impressions you want to request from the QR"
+            " code."
         )
       else:
-        # Build summary and totals for the QR request
-        qr_summary_list = [f"1x {item['name']}" for item in qr_selected_items]
-        qr_items_str = ", ".join(qr_summary_list)
-        qr_qty = len(qr_selected_items)
-        qr_subtotal = qr_qty * 45.0
+        qr_subtotal = qr_total_qty * 45.0
 
         qr_discount = 0.0
         if qr_subtotal >= 100.0:
           qr_discount = 0.20
-        elif qr_qty >= 3:
+        elif qr_total_qty >= 3:
           qr_discount = 0.15
-        elif qr_qty == 2:
+        elif qr_total_qty == 2:
           qr_discount = 0.10
 
         qr_final_total = qr_subtotal * (1 - qr_discount)
-
-        # Build cart items dictionary for database deduction/tracking
-        qr_cart_dict = {}
-        for item in qr_selected_items:
-          qr_cart_dict[item["id"]] = qr_cart_dict.get(item["id"], 0) + 1
 
         save_order_to_db(
             name=qr_cust_name,
             email=qr_cust_contact,
             phone=qr_cust_contact,
             address=qr_shipping_address,
-            items_summary=qr_items_str,
-            qty=qr_qty,
+            items_summary=qr_item_requests,
+            qty=qr_total_qty,
             subtotal=qr_subtotal,
             discount=qr_discount,
             total=qr_final_total,
             payment_method=qr_payment_method,
             is_priority=1,  # QR requests default to priority preorder handling
             notes=(
-                "QR Code Request Form. " + (qr_notes if qr_notes else "")
+                "QR Code Custom Request Order. Desired Impressions:"
+                f" {qr_item_requests}. "
+                + (qr_notes if qr_notes else "")
             ),
-            cart_items=qr_cart_dict,
+            cart_items={},
         )
 
         st.success(
-            f"Success! Your request for {qr_qty} bottle(s) has been submitted"
-            f" for {qr_cust_name}."
+            f"Success! Your request for {qr_total_qty} impression bottle(s) has"
+            f" been submitted for {qr_cust_name}."
         )
         st.info(
             f"Please complete your settlement of **${qr_final_total:.2f}** via"
