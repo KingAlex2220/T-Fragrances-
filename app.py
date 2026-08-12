@@ -72,13 +72,21 @@ def init_db():
 init_db()
 
 # ==========================================
-# GLOBAL DISCLAIMER & CATALOG DATA
+# GLOBAL DISCLAIMERS & CATALOG DATA
 # ==========================================
 DISCLAIMER_TEXT = (
     "TF Fragrances offers proprietary, independently formulated scents inspired by popular fragrance profiles. "
     "Any reference to scent families or style impressions is strictly for descriptive purposes to give customers "
     "an idea of the olfactory notes. TF Fragrances does not use third-party trademarked names, nor are our products "
     "affiliated with, endorsed by, or sponsored by any third-party brands or manufacturers."
+)
+
+ALLERGY_DISCLAIMER_TEXT = (
+    "⚠️ ALLERGY & SKIN SENSITIVITY NOTICE: T Fragrances products contain concentrated fragrance oils, essential oils, "
+    "and aromatic compounds. Please perform a patch test on a small area of skin before full application. Discontinue use "
+    "immediately if redness, irritation, or itching occurs. Avoid contact with eyes, damaged skin, or open wounds. "
+    "Do not ingest. Keep out of reach of children and pets. T Fragrances assumes no liability for adverse allergic reaction "
+    "or skin sensitivities."
 )
 
 FRAGRANCE_CATALOG = [
@@ -288,8 +296,10 @@ st.sidebar.subheader(f"Total: ${final_subtotal:.2f}")
 # ==========================================
 st.title("T Fragrances POS & Master Portal")
 
-with st.expander("ℹ️ Legal & Brand Notice"):
-    st.write(DISCLAIMER_TEXT)
+with st.expander("ℹ️ Legal, Brand & Allergy Notices"):
+    st.write(f"**Trademark Notice:** {DISCLAIMER_TEXT}")
+    st.write("---")
+    st.warning(ALLERGY_DISCLAIMER_TEXT)
 
 filtered_catalog = FRAGRANCE_CATALOG
 if selected_gender != "All":
@@ -392,8 +402,16 @@ with tabs[1]:
             
             notes = st.text_area("Special Instructions / Delivery Notes")
             
+            # Allergy Acknowledgement Checkbox
+            st.caption("⚠️ **Safety Acknowledgement**")
+            allergy_ack = st.checkbox("I acknowledge that I have read the Allergy & Skin Sensitivity Disclaimer and agree to perform a skin patch test prior to use.")
+            
             if st.form_submit_button("Place Order"):
-                if name and email and phone and address:
+                if not (name and email and phone and address):
+                    st.error("Please fill in all required customer details.")
+                elif not allergy_ack:
+                    st.error("Please acknowledge the Allergy & Skin Sensitivity notice before submitting your order.")
+                else:
                     items_str = ", ".join(summary_list)
                     save_order_to_db(
                         name, email, phone, address, 
@@ -406,8 +424,6 @@ with tabs[1]:
                         st.warning("⚡ Priority Preorder active. Processing on accelerated timeline.")
                     st.info(f"Send total payment of **${final_subtotal:.2f}** via **{payment_method}**.")
                     st.session_state.cart = {}
-                else:
-                    st.error("Please fill in all required fields.")
 
 # ------------------------------------------
 # TAB 3: ORDER LOOKUP (CUSTOMER & ADMIN)
@@ -529,3 +545,4 @@ with tabs[3]:
 # ==========================================
 st.markdown("---")
 st.caption(f"**Legal Disclaimer:** {DISCLAIMER_TEXT}")
+st.caption(f"{ALLERGY_DISCLAIMER_TEXT}")
