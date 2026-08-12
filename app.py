@@ -120,6 +120,8 @@ def restock_item(product_code, add_qty):
 PRICE_PER_BOTTLE = 45.00
 LOCAL_BOTTLE_IMG = "images/bottles.png"
 LOCAL_QR_IMG = "images/zelle_qr.png"
+LOCAL_CASHAPP_QR_IMG = "images/cashapp_qr.png"
+LOCAL_VENMO_QR_IMG = "images/venmo_qr.png"
 LOCAL_CATALOG_QR_IMG = "images/Catalog_qr.png.jpg"
 
 # --- SIDEBAR ACCESS INTERFACE ---
@@ -142,7 +144,6 @@ if access_mode == "🛍️ Public Storefront":
     store_tab, track_tab = st.tabs(["🛍️ Order Online", "📦 Track My Order"])
     
     with store_tab:
-        # Check if an order was recently placed to render confirmation
         if "last_order_id" in st.session_state:
             order_id = st.session_state.last_order_id
             order_total = st.session_state.get('last_order_total', PRICE_PER_BOTTLE)
@@ -161,9 +162,13 @@ if access_mode == "🛍️ Public Storefront":
                 if os.path.exists(LOCAL_QR_IMG):
                     st.image(LOCAL_QR_IMG, caption="Scan with your banking app to Zelle instantly.", width=300)
             elif selected_method == "Cash App":
-                st.info(f"Send **${order_total:.2f}** via **Cash App**:\n\n• **Cashtag:** `$TFragrances`\n• **Memo:** Order `{order_id}`")
+                st.info(f"Send **${order_total:.2f}** via **Cash App**:\n\n• **Cashtag:** `$JaMekaHowell`\n• **Name:** Jameka Howell\n• **Memo:** Order `{order_id}`")
+                if os.path.exists(LOCAL_CASHAPP_QR_IMG):
+                    st.image(LOCAL_CASHAPP_QR_IMG, caption="Scan with Cash App to pay instantly.", width=300)
             elif selected_method == "Venmo":
-                st.info(f"Send **${order_total:.2f}** via **Venmo**:\n\n• **Username:** `@TFragrances`\n• **Phone Verification (Last 4):** `4196`\n• **Memo:** Order `{order_id}`")
+                st.info(f"Send **${order_total:.2f}** via **Venmo**:\n\n• **Username:** `@Jameka-Hatton`\n• **Name:** Jameka Hatton\n• **Memo:** Order `{order_id}`")
+                if os.path.exists(LOCAL_VENMO_QR_IMG):
+                    st.image(LOCAL_VENMO_QR_IMG, caption="Scan with Venmo to pay instantly.", width=300)
             else:
                 st.info(f"Send **${order_total:.2f}** via **Apple Pay**:\n\n• **Send to Phone:** `863-236-4196`\n• **Note/Message:** Include Order ID `{order_id}`")
 
@@ -222,9 +227,9 @@ if access_mode == "🛍️ Public Storefront":
                     st.image(LOCAL_BOTTLE_IMG, use_container_width=True)
 
                 st.markdown("#### 3. Shipping & Contact Info")
-                cust_name = st.text_input("Full Name:")
-                cust_phone = st.text_input("Phone Number:")
-                cust_address = st.text_area("Shipping Address:")
+                cust_name = st.text_input("Full Name:", key="order_cust_name")
+                cust_phone = st.text_input("Phone Number:", key="order_cust_phone")
+                cust_address = st.text_area("Shipping Address:", key="order_cust_address")
 
                 st.markdown("#### 4. Select Settlement Channel")
                 payment_method = st.selectbox(
@@ -233,9 +238,7 @@ if access_mode == "🛍️ Public Storefront":
                 )
                 
                 button_label = "Review Priority Preorder Invoice" if is_preorder_item else "Review Order Invoice"
-                submit_order = st.button(button_label, type="primary")
-
-                if submit_order:
+                if st.button(button_label, type="primary"):
                     if not cust_name.strip() or not cust_phone.strip() or not cust_address.strip():
                         st.error("⚠️ Please fill out your Name, Phone Number, and Shipping Address.")
                     else:
@@ -270,7 +273,7 @@ if access_mode == "🛍️ Public Storefront":
                     st.write(f"• **Order Type:** {'Priority Preorder' if cart.get('is_preorder', 0) == 1 else 'Standard Order'}")
 
                     confirm_label = "Confirm & Place Priority Preorder" if cart.get("is_preorder", 0) == 1 else "Confirm Order"
-                    if st.button(confirm_label, type="primary"):
+                    if st.button(confirm_label, type="primary", key="confirm_order_btn"):
                         generated_id = f"TF-WEB-{int(time.time())}"
                         timestamp_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                         initial_status = "Preorder - Awaiting Batch Restock" if cart.get("is_preorder", 0) == 1 else "Awaiting Settlement"
@@ -296,6 +299,7 @@ if access_mode == "🛍️ Public Storefront":
                         st.session_state.last_order_total = cart['total']
                         st.session_state.last_order_method = cart['payment_method']
                         st.session_state.last_order_preorder = cart.get("is_preorder", 0)
+                        
                         st.session_state.pop("web_cart", None)
                         st.rerun()
                 else:
