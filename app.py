@@ -46,7 +46,7 @@ def init_db():
     
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS orders_v2 (
-            order_id TEXT PRIMARY KEY,
+            order_id TEXT,
             timestamp TEXT,
             customer_name TEXT,
             phone_number TEXT,
@@ -84,7 +84,7 @@ def init_db():
 
 init_db()
 
-# --- HELPER INVENTORY FUNCTIONS ---
+# --- HELPER INVENTORY & CART FUNCTIONS ---
 def get_item_stock(product_code):
     conn = get_db_connection()
     row = conn.execute("SELECT stock_quantity, initial_capacity FROM inventory WHERE product_code = ?", (product_code,)).fetchone()
@@ -110,6 +110,13 @@ def calculate_order_total(quantity):
     final_total = subtotal - discount_amount
     return final_total, subtotal, discount_amount
 
+def calculate_cart_totals(cart_items):
+    total_qty = sum(item["quantity"] for item in cart_items)
+    subtotal = float(total_qty * 45.00)
+    discount_amount = subtotal * 0.20 if subtotal > 100.00 else 0.0
+    final_total = subtotal - discount_amount
+    return final_total, subtotal, discount_amount, total_qty
+
 def restock_item(product_code, add_qty):
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -123,6 +130,10 @@ LOCAL_QR_IMG = "images/zelle_qr.png"
 LOCAL_CASHAPP_QR_IMG = "images/cashapp_qr.png"
 LOCAL_VENMO_QR_IMG = "images/venmo_qr.png"
 LOCAL_CATALOG_QR_IMG = "images/Catalog_qr.png.jpg"
+
+# Initialize Session State Cart
+if "cart_items" not in st.session_state:
+    st.session_state.cart_items = []
 
 # --- SIDEBAR ACCESS INTERFACE ---
 st.sidebar.markdown("### 🔒 System Portal")
@@ -141,8 +152,12 @@ elif password:
 # PUBLIC VIEW: ONLINE STOREFRONT
 # ==========================================
 if access_mode == "🛍️ Public Storefront":
-    store_tab, track_tab = st.tabs(["🛍️ Order Online", "📦 Track My Order"])
+    cart_count = sum(item["quantity"] for item in st.session_state.cart_items)
+    cart_tab_label = f"🛒 Shopping Cart ({cart_count})"
     
+    store_tab, cart_tab, track_tab = st.tabs(["🛍️ Order Online", cart_tab_label, "📦 Track My Order"])
+    
+    # TAB 1: PRODUCT CATALOG & ADD TO CART
     with store_tab:
         if "last_order_id" in st.session_state:
             order_id = st.session_state.last_order_id
@@ -175,7 +190,7 @@ if access_mode == "🛍️ Public Storefront":
             st.warning(f"⚠️ **IMPORTANT:** Always include your Order ID **`{order_id}`** in the payment note/memo!")
             
             if st.button("Place Another Order / Clear Screen"):
-                for key in ["web_cart", "last_order_id", "last_order_total", "last_order_method", "last_order_preorder"]:
+                for key in ["cart_items", "web_cart", "last_order_id", "last_order_total", "last_order_method", "last_order_preorder"]:
                     st.session_state.pop(key, None)
                 st.rerun()
 
@@ -226,85 +241,137 @@ if access_mode == "🛍️ Public Storefront":
                 if os.path.exists(LOCAL_BOTTLE_IMG):
                     st.image(LOCAL_BOTTLE_IMG, use_container_width=True)
 
-                st.markdown("#### 3. Shipping & Contact Info")
-                cust_name = st.text_input("Full Name:", key="order_cust_name")
-                cust_phone = st.text_input("Phone Number:", key="order_cust_phone")
-                cust_address = st.text_area("Shipping Address:", key="order_cust_address")
-
-                st.markdown("#### 4. Select Settlement Channel")
-                payment_method = st.selectbox(
-                    "Payment / Settlement Channel:",
-                    ["Zelle", "Cash App", "Venmo",]
-                )
-                
-                button_label = "Review Priority Preorder Invoice" if is_preorder_item else "Review Order Invoice"
-                if st.button(button_label, type="primary"):
-                    if not cust_name.strip() or not cust_phone.strip() or not cust_address.strip():
-                        st.error("⚠️ Please fill out your Name, Phone Number, and Shipping Address.")
+                st.markdown("---")
+                if st.button("🛒 Add to Cart", type="primary", use_container_width=True):
+                    existing = next((i for i in st.session_state.cart_items if i["code"] == matching_obj["code"] and i["scent"] == matching_obj["scent"]), None)
+                    if existing:
+                        existing["quantity"] += int(web_qty)
                     else:
-                        final_calculated_price, _, _ = calculate_order_total(web_qty)
-                        st.session_state.web_cart = {
-                            "name": cust_name.strip(),
-                            "phone": cust_phone.strip(),
-                            "address": cust_address.strip(),
-                            "category": cat_select,
+                        st.session_state.cart_items.append({
                             "code": matching_obj["code"],
                             "scent": matching_obj["scent"],
+                            "category": cat_select,
                             "quantity": int(web_qty),
-                            "total": float(final_calculated_price),
-                            "payment_method": payment_method,
-                            "is_preorder": 1 if is_preorder_item else 0
-                        }
+                            "is_preorder": 1 if is_preorder_item else 0,
+                            "unit_price": PRICE_PER_BOTTLE
+                        })
+                    st.success(f"Added {web_qty}x {matching_obj['scent']} to your cart!")
+                    st.rerun()
 
             with col_store_right:
-                if "web_cart" in st.session_state and st.session_state.web_cart:
-                    cart = st.session_state.web_cart
-                    st.info("⚙️ **Invoice Generated Successfully**")
-
-                    if cart.get("is_preorder", 0) == 1:
-                        st.warning("⭐ **PRIORITY PREORDER STATUS APPLIED**")
-
-                    st.metric("Total Balance Due", f"${cart['total']:.2f}")
-                    st.write(f"• **Purchaser:** {cart['name']}")
-                    st.write(f"• **Phone:** {cart['phone']}")
-                    st.write(f"• **Selection:** {cart['code']} - {cart['scent']}")
-                    st.write(f"• **Quantity Ordered:** {cart['quantity']} bottle(s)")
-                    st.write(f"• **Settlement Channel:** {cart['payment_method']}")
-                    st.write(f"• **Order Type:** {'Priority Preorder' if cart.get('is_preorder', 0) == 1 else 'Standard Order'}")
-
-                    confirm_label = "Confirm & Place Priority Preorder" if cart.get("is_preorder", 0) == 1 else "Confirm Order"
-                    if st.button(confirm_label, type="primary", key="confirm_order_btn"):
-                        generated_id = f"TF-WEB-{int(time.time())}"
-                        timestamp_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                        initial_status = "Preorder - Awaiting Batch Restock" if cart.get("is_preorder", 0) == 1 else "Awaiting Settlement"
-
-                        conn = get_db_connection()
-                        cursor = conn.cursor()
-                        cursor.execute("""
-                            INSERT INTO orders_v2 
-                            (order_id, timestamp, customer_name, phone_number, delivery_address, category, product_code, scent_name, quantity, total_paid, payment_method, is_preorder, status, order_type)
-                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                        """, (
-                            generated_id, timestamp_str, cart['name'], cart['phone'], cart['address'], 
-                            cart['category'], cart['code'], cart['scent'], cart['quantity'], cart['total'], 
-                            cart['payment_method'], cart['is_preorder'], initial_status, 'Online Store'
-                        ))
-                        conn.commit()
-                        conn.close()
-
-                        if cart.get("is_preorder", 0) == 0:
-                            deduct_inventory(cart['code'], cart['quantity'])
-
-                        st.session_state.last_order_id = generated_id
-                        st.session_state.last_order_total = cart['total']
-                        st.session_state.last_order_method = cart['payment_method']
-                        st.session_state.last_order_preorder = cart.get("is_preorder", 0)
-                        
-                        st.session_state.pop("web_cart", None)
-                        st.rerun()
+                st.markdown("### 🛒 Cart Quick View")
+                if not st.session_state.cart_items:
+                    st.info("Your shopping cart is currently empty. Add items from the catalog on the left!")
                 else:
-                    st.info("Select a scent and click Review to generate an order preview.")
+                    final_tot, sub_tot, disc_amt, total_bottles = calculate_cart_totals(st.session_state.cart_items)
+                    for idx, item in enumerate(st.session_state.cart_items):
+                        with st.container(border=True):
+                            st.write(f"**{item['scent']}**")
+                            st.write(f"• Code: `{item['code']}` | Qty: {item['quantity']}")
+                            st.write(f"• Price: ${item['unit_price'] * item['quantity']:.2f}")
+                            if item["is_preorder"]:
+                                st.caption("⭐ Priority Preorder Item")
+                    
+                    st.markdown("---")
+                    st.write(f"**Items:** {total_bottles} bottle(s)")
+                    st.write(f"**Subtotal:** ${sub_tot:.2f}")
+                    if disc_amt > 0:
+                        st.success(f"🎉 **20% Bulk Savings Applied:** -${disc_amt:.2f}")
+                    st.metric("Cart Subtotal", f"${final_tot:.2f}")
 
+    # TAB 2: AMAZON-STYLE CART CHECKOUT PAGE
+    with cart_tab:
+        st.subheader("🛒 Shopping Cart & Checkout")
+        if not st.session_state.cart_items:
+            st.info("Your Amazon-style cart is empty. Please select fragrances from the 'Order Online' tab!")
+        else:
+            col_cart_list, col_checkout_summary = st.columns([3, 2])
+            
+            with col_cart_list:
+                st.markdown("#### Items in your cart")
+                for idx, item in enumerate(st.session_state.cart_items):
+                    with st.container(border=True):
+                        c1, c2, c3 = st.columns([3, 2, 1])
+                        with c1:
+                            st.markdown(f"**{item['scent']}**")
+                            st.caption(f"Category: {item['category']} | Code: {item['code']}")
+                            if item["is_preorder"]:
+                                st.warning("⭐ Priority Preorder Batch")
+                        with c2:
+                            new_qty = st.number_input(f"Qty", min_value=1, max_value=100, value=item["quantity"], key=f"cart_qty_{idx}")
+                            st.session_state.cart_items[idx]["quantity"] = new_qty
+                        with c3:
+                            st.markdown(f"**${item['unit_price'] * item['quantity']:.2f}**")
+                            if st.button("Delete", key=f"del_cart_{idx}"):
+                                st.session_state.cart_items.pop(idx)
+                                st.rerun()
+
+            with col_checkout_summary:
+                final_tot, sub_tot, disc_amt, total_bottles = calculate_cart_totals(st.session_state.cart_items)
+                
+                with st.container(border=True):
+                    st.markdown("#### Shipping & Contact Info")
+                    cart_cust_name = st.text_input("Full Name:", key="cart_cust_name")
+                    cart_cust_phone = st.text_input("Phone Number:", key="cart_cust_phone")
+                    cart_cust_address = st.text_area("Shipping Address:", key="cart_cust_address")
+
+                    st.markdown("#### Select Settlement Channel")
+                    cart_payment_method = st.selectbox(
+                        "Payment Channel:",
+                        ["Zelle", "Cash App", "Venmo", "Apple Pay"],
+                        key="cart_payment_select"
+                    )
+
+                    st.markdown("---")
+                    st.markdown("#### Order Summary")
+                    st.write(f"Total Items: **{total_bottles} bottle(s)**")
+                    st.write(f"Subtotal: **${sub_tot:.2f}**")
+                    if disc_amt > 0:
+                        st.success(f"🎉 20% Discount (> $100): **-${disc_amt:.2f}**")
+                    st.markdown(f"### Total: :green[${final_tot:.2f}]")
+
+                    has_preorder = any(i["is_preorder"] == 1 for i in st.session_state.cart_items)
+                    place_btn_label = "Place Priority Preorder" if has_preorder else "Place Your Order"
+
+                    if st.button(place_btn_label, type="primary", use_container_width=True):
+                        if not cart_cust_name.strip() or not cart_cust_phone.strip() or not cart_cust_address.strip():
+                            st.error("⚠️ Please complete your Name, Phone Number, and Delivery Address.")
+                        else:
+                            generated_id = f"TF-WEB-{int(time.time())}"
+                            timestamp_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+                            conn = get_db_connection()
+                            cursor = conn.cursor()
+
+                            for item in st.session_state.cart_items:
+                                item_total, _, _ = calculate_order_total(item["quantity"])
+                                initial_status = "Preorder - Awaiting Batch Restock" if item["is_preorder"] == 1 else "Awaiting Settlement"
+
+                                cursor.execute("""
+                                    INSERT INTO orders_v2 
+                                    (order_id, timestamp, customer_name, phone_number, delivery_address, category, product_code, scent_name, quantity, total_paid, payment_method, is_preorder, status, order_type)
+                                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                """, (
+                                    generated_id, timestamp_str, cart_cust_name.strip(), cart_cust_phone.strip(), cart_cust_address.strip(), 
+                                    item['category'], item['code'], item['scent'], item['quantity'], item_total, 
+                                    cart_payment_method, item['is_preorder'], initial_status, 'Online Store'
+                                ))
+
+                                if item["is_preorder"] == 0:
+                                    deduct_inventory(item['code'], item['quantity'])
+
+                            conn.commit()
+                            conn.close()
+
+                            st.session_state.last_order_id = generated_id
+                            st.session_state.last_order_total = final_tot
+                            st.session_state.last_order_method = cart_payment_method
+                            st.session_state.last_order_preorder = 1 if has_preorder else 0
+                            
+                            st.session_state.cart_items = []
+                            st.rerun()
+
+    # TAB 3: ORDER TRACKING
     with track_tab:
         st.subheader("📦 Real-Time Order Tracking")
         cust_query_input = st.text_input("Order ID or Phone Number:", placeholder="TF-WEB-1234 or 863-555-0199", key="customer_track_input").strip()
@@ -325,25 +392,36 @@ if access_mode == "🛍️ Public Storefront":
                     conn.close()
                     
                     if rows:
-                        st.markdown(f"### Found {len(rows)} Matching Order(s)")
-                        for row in rows:
+                        st.markdown(f"### Found {len(rows)} Matching Item(s)")
+                        grouped_orders = {}
+                        for r in rows:
+                            oid = r["order_id"]
+                            if oid not in grouped_orders:
+                                grouped_orders[oid] = []
+                            grouped_orders[oid].append(r)
+
+                        for oid, items in grouped_orders.items():
                             with st.container(border=True):
-                                status_raw = row["status"]
+                                first_item = items[0]
+                                status_raw = first_item["status"]
                                 status_emoji = "⭐" if "Preorder" in status_raw else ("📦" if "Paid" in status_raw else ("✅" if "Completed" in status_raw else "⏳"))
                                 status_color = "blue" if "Preorder" in status_raw or "Paid" in status_raw else ("green" if "Completed" in status_raw else "orange")
                                     
-                                st.markdown(f"### Order ID: `{row['order_id']}`")
+                                st.markdown(f"### Order ID: `{oid}`")
                                 st.markdown(f"#### Status: :{status_color}[{status_emoji} {status_raw}]")
                                 
                                 col_details_1, col_details_2 = st.columns(2)
                                 with col_details_1:
-                                    st.write(f"• **Customer:** {row['customer_name']}")
-                                    st.write(f"• **Phone:** {row['phone_number']}")
-                                    st.write(f"• **Order Date:** {row['timestamp']}")
+                                    st.write(f"• **Customer:** {first_item['customer_name']}")
+                                    st.write(f"• **Phone:** {first_item['phone_number']}")
+                                    st.write(f"• **Order Date:** {first_item['timestamp']}")
                                 with col_details_2:
-                                    st.write(f"• **Scent:** {row['scent_name']} ({row['quantity']} bottle(s))")
-                                    st.write(f"• **Settlement Channel:** {row['payment_method']}")
-                                    st.write(f"• **Total Value:** ${row['total_paid']:.2f}")
+                                    st.write(f"• **Settlement Channel:** {first_item['payment_method']}")
+                                    st.write(f"• **Shipping Address:** {first_item['delivery_address']}")
+
+                                st.markdown("**Purchased Items:**")
+                                for itm in items:
+                                    st.write(f"• {itm['scent_name']} ({itm['quantity']} bottle(s)) - ${itm['total_paid']:.2f}")
                     else:
                         st.error("No orders found matching that Order ID or Phone Number.")
                 except Exception as e:
@@ -397,7 +475,7 @@ else:
             st.dataframe(preorders_df, use_container_width=True)
             col_p1, col_p2 = st.columns([2, 1])
             with col_p1:
-                target_preorder = st.selectbox("Select Priority Preorder ID to Process:", preorders_df["order_id"].tolist())
+                target_preorder = st.selectbox("Select Priority Preorder ID to Process:", preorders_df["order_id"].unique().tolist())
             with col_p2:
                 preorder_action = st.radio("Preorder Status Update:", ["Mark as Batch Restocked & Processing", "Mark as Shipped / Completed", "Cancel Preorder"])
                 
@@ -503,7 +581,7 @@ else:
             st.success("No pending web orders require attention.")
         else:
             st.dataframe(pending_df, use_container_width=True)
-            target_order = st.selectbox("Select Order ID to update:", pending_df["order_id"].tolist())
+            target_order = st.selectbox("Select Order ID to update:", pending_df["order_id"].unique().tolist())
             next_action = st.radio("Action:", ["Mark as Paid & Ready to Pack/Ship", "Convert to Priority Preorder Queue", "Cancel / Payment Rejected"])
             if st.button("Execute Action Update"):
                 new_status = "Paid & Processing" if "Mark as Paid" in next_action else ("Preorder - Awaiting Batch Restock" if "Convert" in next_action else "Cancelled")
@@ -540,5 +618,4 @@ else:
 
 # --- GLOBAL FOOTER ---
 st.markdown("---")
-st.markdown("<div style='font-size: 0.8rem; color: #64748B;'><strong>LEGAL DISCLAIMER:</strong> T Fragrances competes with designer brands. It is not affiliated with designer brands or their manufacturers.</div>", unsafe_allow_html=True)
-st.markdown("<p style='text-align: center; color: #64748B; font-size: 0.9rem;'>© T Fragrances. All Rights Reserved.</p>", unsafe_allow_html=True)
+st.markdown("<div style='font-size: 0.8rem; color: #64748B;'><strong>LEGAL DISCLAIMER:</strong> T Fragrances products are independent creations and are not affiliated with, sponsored by, or endorsed by original designer brands. Reference names are strictly for scent classification.</div>", unsafe_allow_html=True)
