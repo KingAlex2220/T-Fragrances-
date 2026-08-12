@@ -1,623 +1,563 @@
-import streamlit as st
-import sqlite3
-import random
-import datetime
-import time
 import os
+import streamlit as st
 import pandas as pd
+import sqlite3
+from datetime import datetime
 
-# --- PAGE SETUP & BRANDING ---
-st.set_page_config(page_title="T Fragrances - Storefront & POS", page_icon="✨", layout="wide")
+# ==========================================
+# PAGE CONFIGURATION
+# ==========================================
+st.set_page_config(
+    page_title="T Fragrances | Storefront & POS",
+    page_icon="✨",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 
-st.markdown("<h1 style='text-align: center; color: #1E293B; font-family: \"Segoe UI\", sans-serif; margin-bottom: 0;'>T FRAGRANCES</h1>", unsafe_allow_html=True)
-st.markdown("<p style='text-align: center; font-style: italic; color: #64748B; font-size: 1.1rem; margin-top: 5px;'>Designer Quality (50ml) | 100% Pure Oil-Based | Reimagined Luxury</p>", unsafe_allow_html=True)
-st.markdown("---")
-
-# --- DATA STORAGE SETUP ---
+# ==========================================
+# DATABASE SETUP & AUTO-MIGRATION
+# ==========================================
 DB_FILE = "t_fragrances.db"
-
-def get_db_connection():
-    conn = sqlite3.connect(DB_FILE)
-    conn.row_factory = sqlite3.Row
-    return conn
-
-# --- EMBEDDED MASTER CATALOG ---
-men_catalog = [
-    {"code": "NO-1", "label": "No 1 | No 1 Sauvage Blend", "scent": "No 1 Sauvage Blend", "category": "Men's Premium Oils"},
-    {"code": "NO-4", "label": "No 4 | No 4 Aventus Blend", "scent": "No 4 Aventus Blend", "category": "Men's Premium Oils"},
-]
-
-women_catalog = [
-    {"code": "NO-2", "label": "No 2 | No 2 Good Girl Blend", "scent": "No 2 Good Girl Blend", "category": "Women's Premium Oils"},
-    {"code": "NO-3", "label": "No 3 | No 3 Rouge 540 Blend", "scent": "No 3 Rouge 540 Blend", "category": "Women's Premium Oils"},
-]
-
-home_catalog = [
-    {"code": "H#1", "label": "H#1 | House Blend - Laundry day", "scent": "Laundry day", "category": "Home & House Scents"},
-    {"code": "H#2", "label": "H#2 | House Blend - Sunrise", "scent": "Sunrise", "category": "Home & House Scents"},
-]
-
-ALL_CATALOG_ITEMS = men_catalog + women_catalog + home_catalog
-DEFAULT_INITIAL_STOCK = 5
+DEFAULT_STOCK_PER_ITEM = 5  # Default 5 bottles per scent
 
 def init_db():
-    conn = get_db_connection()
-    cursor = conn.cursor()
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
     
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS orders_v2 (
-            order_id TEXT,
-            timestamp TEXT,
+    try:
+        c.execute("SELECT item_id FROM inventory LIMIT 1")
+    except sqlite3.OperationalError:
+        c.execute("DROP TABLE IF EXISTS inventory")
+        c.execute("DROP TABLE IF EXISTS orders")
+
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS orders (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            order_date TEXT,
             customer_name TEXT,
-            phone_number TEXT,
-            delivery_address TEXT,
-            category TEXT,
-            product_code TEXT,
-            scent_name TEXT,
-            quantity INTEGER DEFAULT 1,
-            total_paid REAL,
+            customer_email TEXT,
+            customer_phone TEXT,
+            shipping_address TEXT,
+            items_summary TEXT,
+            total_qty INTEGER,
+            subtotal REAL,
+            discount_applied REAL,
+            final_total REAL,
             payment_method TEXT,
-            is_preorder INTEGER DEFAULT 0,
             status TEXT,
-            order_type TEXT DEFAULT 'Online Store'
+            is_priority INTEGER DEFAULT 0,
+            cycle_id TEXT,
+            notes TEXT
         )
-    """)
+    ''')
     
-    cursor.execute("""
+    c.execute("PRAGMA table_info(orders)")
+    existing_cols = [col[1] for col in c.fetchall()]
+    
+    if "is_priority" not in existing_cols:
+        c.execute("ALTER TABLE orders ADD COLUMN is_priority INTEGER DEFAULT 0")
+    if "cycle_id" not in existing_cols:
+        c.execute("ALTER TABLE orders ADD COLUMN cycle_id TEXT")
+    if "notes" not in existing_cols:
+        c.execute("ALTER TABLE orders ADD COLUMN notes TEXT")
+    
+    c.execute('''
         CREATE TABLE IF NOT EXISTS inventory (
-            product_code TEXT PRIMARY KEY,
-            category TEXT,
-            scent_name TEXT,
-            stock_quantity INTEGER DEFAULT 5,
-            initial_capacity INTEGER DEFAULT 5
+            item_id TEXT PRIMARY KEY,
+            item_name TEXT,
+            stock_level INTEGER,
+            initial_stock INTEGER
         )
-    """)
+    ''')
     
-    for item in ALL_CATALOG_ITEMS:
-        cursor.execute("""
-            INSERT OR IGNORE INTO inventory (product_code, category, scent_name, stock_quantity, initial_capacity)
-            VALUES (?, ?, ?, ?, ?)
-        """, (item["code"], item["category"], item["scent"], DEFAULT_INITIAL_STOCK, DEFAULT_INITIAL_STOCK))
-        
     conn.commit()
     conn.close()
 
 init_db()
 
-# --- HELPER INVENTORY & CART FUNCTIONS ---
-def get_item_stock(product_code):
-    conn = get_db_connection()
-    row = conn.execute("SELECT stock_quantity, initial_capacity FROM inventory WHERE product_code = ?", (product_code,)).fetchone()
-    conn.close()
-    if row:
-        return row["stock_quantity"], row["initial_capacity"]
-    return DEFAULT_INITIAL_STOCK, DEFAULT_INITIAL_STOCK
+# ==========================================
+# GLOBAL DISCLAIMERS & CATALOG DATA
+# ==========================================
+DISCLAIMER_TEXT = (
+    "TF Fragrances offers proprietary, independently formulated scents inspired by popular fragrance profiles. "
+    "Any reference to scent families or style impressions is strictly for descriptive purposes to give customers "
+    "an idea of the olfactory notes. TF Fragrances does not use third-party trademarked names, nor are our products "
+    "affiliated with, endorsed by, or sponsored by any third-party brands or manufacturers."
+)
 
-def deduct_inventory(product_code, qty):
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("UPDATE inventory SET stock_quantity = MAX(0, stock_quantity - ?) WHERE product_code = ?", (qty, product_code))
+ALLERGY_DISCLAIMER_TEXT = (
+    "⚠️ ALLERGY & SKIN SENSITIVITY NOTICE: T Fragrances products contain concentrated fragrance oils, essential oils, "
+    "and aromatic compounds. Please perform a patch test on a small area of skin before full application. Discontinue use "
+    "immediately if redness, irritation, or itching occurs. Avoid contact with eyes, damaged skin, or open wounds. "
+    "Do not ingest. Keep out of reach of children and pets. T Fragrances assumes no liability for adverse allergic reaction "
+    "or skin sensitivities."
+)
+
+FRAGRANCE_CATALOG = [
+    # --- MEN'S COLLECTION (30) ---
+    {"id": "m01", "name": "Savage Spirit Blend", "gender": "Men", "category": "Fresh & Spicy", "price": 30.0, "notes": "Inspired by Sauvage profile — Crisp bergamot, pepper, and rich ambroxan.", "image_url": None},
+    {"id": "m02", "name": "Monarch Creed", "gender": "Men", "category": "Fruity & Woody", "price": 30.0, "notes": "Inspired by Aventus profile — Smoky pineapple, birchwood, and oakmoss.", "image_url": None},
+    {"id": "m03", "name": "Azure Night", "gender": "Men", "category": "Woody & Aromatic", "price": 30.0, "notes": "Inspired by Bleu de Chanel profile — Fresh grapefruit, incense, and cedarwood.", "image_url": None},
+    {"id": "m04", "name": "Oceanic Drift", "gender": "Men", "category": "Aquatic & Fresh", "price": 30.0, "notes": "Inspired by Acqua Di Gio profile — Marine minerals, mandarin, and ocean breeze.", "image_url": None},
+    {"id": "m05", "name": "Smoky Reserve", "gender": "Men", "category": "Warm & Gourmand", "price": 30.0, "notes": "Inspired by Tobacco Vanille profile — Rich tobacco leaf, sweet vanilla, and spices.", "image_url": None},
+    {"id": "m06", "name": "Sailor's Pride", "gender": "Men", "category": "Oriental & Fresh", "price": 30.0, "notes": "Inspired by Le Male profile — Classic mint, lavender, and warm tonka bean.", "image_url": None},
+    {"id": "m07", "name": "Crimson Rush", "gender": "Men", "category": "Spicy & Woody", "price": 30.0, "notes": "Inspired by Spicebomb profile — Fiery red saffron, fresh grapefruit, and redwood.", "image_url": None},
+    {"id": "m08", "name": "Gilded Leather", "gender": "Men", "category": "Woody Leather", "price": 30.0, "notes": "Inspired by Tuscan Leather profile — Warm lavender, Italian lemon, and cedarwood.", "image_url": None},
+    {"id": "m09", "name": "Metallic Citrus", "gender": "Men", "category": "Fresh Citrus", "price": 30.0, "notes": "Inspired by Chrome Legend profile — Crisp green apple, bergamot, and warm amber.", "image_url": None},
+    {"id": "m10", "name": "Empire Night", "gender": "Men", "category": "Aromatic Spice", "price": 30.0, "notes": "Inspired by Playboy New York profile — Fresh lime, crushed black pepper, and tonka.", "image_url": None},
+    {"id": "m11", "name": "Capital Gold", "gender": "Men", "category": "Sweet Spice", "price": 30.0, "notes": "Inspired by 1 Million profile — Blood mandarin, cinnamon, and warm leather.", "image_url": None},
+    {"id": "m12", "name": "Eternity Code", "gender": "Men", "category": "Oriental Woody", "price": 30.0, "notes": "Inspired by Armani Code profile — Lemon zest, star anise, and smooth leather.", "image_url": None},
+    {"id": "m13", "name": "Velvet Oud", "gender": "Men", "category": "Woody Oriental", "price": 30.0, "notes": "Inspired by Oud Wood profile — Rare oudwood, sandalwood, and Sichuan pepper.", "image_url": None},
+    {"id": "m14", "name": "Invincible Sport", "gender": "Men", "category": "Fresh Marine", "price": 30.0, "notes": "Inspired by Invictus profile — Grapefruit, sea salt, and bay leaf accord.", "image_url": None},
+    {"id": "m15", "name": "Night Hero", "gender": "Men", "category": "Ambery Spice", "price": 30.0, "notes": "Inspired by Wanted by Night profile — Bergamot, roasted coffee, and vetiver base.", "image_url": None},
+    {"id": "m16", "name": "Urban Legend", "gender": "Men", "category": "Woody Aquatic", "price": 30.0, "notes": "Inspired by Light Blue Pour Homme profile — Sea salt, sage, and driftwood notes.", "image_url": None},
+    {"id": "m17", "name": "Bourbon Spice", "gender": "Men", "category": "Warm Gourmand", "price": 30.0, "notes": "Inspired by Angels' Share profile — Aged whiskey, cinnamon bark, and dark amber.", "image_url": None},
+    {"id": "m18", "name": "Midnight Nomad", "gender": "Men", "category": "Oriental Spice", "price": 30.0, "notes": "Inspired by Ombre Leather profile — Cardamom, leather, and smoked amber.", "image_url": None},
+    {"id": "m19", "name": "Royal Vetiver", "gender": "Men", "category": "Earthy Woody", "price": 30.0, "notes": "Inspired by Terre d'Hermes profile — Haitian vetiver, grapefruit, and pink pepper.", "image_url": None},
+    {"id": "m20", "name": "Silver Mountain", "gender": "Men", "category": "Fresh Green", "price": 30.0, "notes": "Inspired by Silver Mountain Water profile — Green tea, blackcurrant, and sandalwood.", "image_url": None},
+    {"id": "m21", "name": "Black Amber", "gender": "Men", "category": "Dark Woody", "price": 30.0, "notes": "Inspired by Black Orchid profile — Rich amber, patchouli, and dark cocoa.", "image_url": None},
+    {"id": "m22", "name": "Citrus Grove", "gender": "Men", "category": "Fresh Citrus", "price": 30.0, "notes": "Inspired by Neroli Portofino profile — Sicilian lemon, neroli, and cedar.", "image_url": None},
+    {"id": "m23", "name": "Desert Sage", "gender": "Men", "category": "Aromatic Herbal", "price": 30.0, "notes": "Inspired by Y Le Parfum profile — Wild sage, lavender, and dried cedar wood.", "image_url": None},
+    {"id": "m24", "name": "Vanguard Oud", "gender": "Men", "category": "Spicy Oud", "price": 30.0, "notes": "Inspired by Royal Oud profile — Dark leather, cardamom, and smoky agarwood.", "image_url": None},
+    {"id": "m25", "name": "Iron & Oak", "gender": "Men", "category": "Earthy & Woody", "price": 30.0, "notes": "Inspired by Legend profile — Oakmoss, clean cedar, and bergamot.", "image_url": None},
+    {"id": "m26", "name": "Aromatic Noir", "gender": "Men", "category": "Woody Floral", "price": 30.0, "notes": "Inspired by Dior Homme Intense profile — Iris, cardamom, and sandalwood blend.", "image_url": None},
+    {"id": "m27", "name": "Pacific Breeze", "gender": "Men", "category": "Clean Aquatic", "price": 30.0, "notes": "Inspired by Aqva Pour Homme profile — Ocean salt, melon, and light musk.", "image_url": None},
+    {"id": "m28", "name": "Titanium Sport", "gender": "Men", "category": "Fresh Citrus", "price": 30.0, "notes": "Inspired by Allure Homme Sport profile — Mandarin, pepper, and white musk.", "image_url": None},
+    {"id": "m29", "name": "Equestrian Red", "gender": "Men", "category": "Fruity Spice", "price": 30.0, "notes": "Inspired by Polo Red profile — Red apple, saffron, and coffee accord.", "image_url": None},
+    {"id": "m30", "name": "Solitude", "gender": "Men", "category": "Minimalist Wood", "price": 30.0, "notes": "Inspired by Molecule 01 profile — Iso E Super, cedar, and subtle amber notes.", "image_url": None},
+
+    # --- WOMEN'S COLLECTION (30) ---
+    {"id": "w01", "name": "Crystal Rouge 540", "gender": "Women", "category": "Amber & Floral", "price": 30.0, "notes": "Inspired by Baccarat Rouge 540 profile — Jasmine, saffron, cedarwood, and ambergris.", "image_url": None},
+    {"id": "w02", "name": "Midnight Vanilla", "gender": "Women", "category": "Warm Gourmand", "price": 30.0, "notes": "Inspired by Black Opium profile — Rich black coffee, white flowers, and sweet vanilla.", "image_url": None},
+    {"id": "w03", "name": "Stiletto Velvet", "gender": "Women", "category": "Sweet Floral", "price": 30.0, "notes": "Inspired by Good Girl profile — Tuberose, roasted tonka bean, and cocoa.", "image_url": None},
+    {"id": "w04", "name": "Heavenly Dream", "gender": "Women", "category": "Gourmand Floral", "price": 30.0, "notes": "Inspired by Cloud profile — Coconut cream, lavender, and praline sweet musk.", "image_url": None},
+    {"id": "w05", "name": "Golden Blossom", "gender": "Women", "category": "Classic Floral", "price": 30.0, "notes": "Inspired by J'adore profile — Ylang-ylang, Damask rose, and jasmine.", "image_url": None},
+    {"id": "w06", "name": "Royal Peony", "gender": "Women", "category": "Soft Floral", "price": 30.0, "notes": "Inspired by Delina profile — Lychee, Turkish rose, peony, and vanilla.", "image_url": None},
+    {"id": "w07", "name": "Sweet Cherry Nectar", "gender": "Women", "category": "Fruity Gourmand", "price": 30.0, "notes": "Inspired by Lost Cherry profile — Black cherry, bitter almond, and liquor notes.", "image_url": None},
+    {"id": "w08", "name": "Empress Bloom", "gender": "Women", "category": "Fresh Floral", "price": 30.0, "notes": "Inspired by Chance Eau Tendre profile — Pink pepper, jasmine sambac, and white musk.", "image_url": None},
+    {"id": "w09", "name": "Nectarine Sunset", "gender": "Women", "category": "Fruity Floral", "price": 30.0, "notes": "Inspired by Nectarine Blossom & Honey profile — Sweet nectarine, peach, and plum blossom.", "image_url": None},
+    {"id": "w10", "name": "Gilded Vanilla", "gender": "Women", "category": "Warm Amber", "price": 30.0, "notes": "Inspired by Vanilla Sex profile — Madagascar vanilla, orchid, and warm amber.", "image_url": None},
+    {"id": "w11", "name": "Opulent Orchid", "gender": "Women", "category": "Exotic Floral", "price": 30.0, "notes": "Inspired by Velvet Orchid profile — Black orchid, rum, and velvety spices.", "image_url": None},
+    {"id": "w12", "name": "Satin Iris", "gender": "Women", "category": "Powdery Floral", "price": 30.0, "notes": "Inspired by Iris Poudre profile — Florentine iris, violet leaves, and soft suede.", "image_url": None},
+    {"id": "w13", "name": "Citrus Bloom", "gender": "Women", "category": "Fresh Citrus", "price": 30.0, "notes": "Inspired by Coco Mademoiselle profile — Orange blossom, neroli, and bergamot peel.", "image_url": None},
+    {"id": "w14", "name": "Velvet Rose", "gender": "Women", "category": "Deep Floral", "price": 30.0, "notes": "Inspired by Velvet Rose & Oud profile — Clove, Damask rose, and smoky oud wood.", "image_url": None},
+    {"id": "w15", "name": "Solar Jasmine", "gender": "Women", "category": "Bright Floral", "price": 30.0, "notes": "Inspired by Alien profile — Solar jasmine, cashmere wood, and white amber.", "image_url": None},
+    {"id": "w16", "name": "Blush Bouquet", "gender": "Women", "category": "Soft Floral", "price": 30.0, "notes": "Inspired by Miss Dior profile — Peony, green mandarin, and white musk.", "image_url": None},
+    {"id": "w17", "name": "Sugar Petals", "gender": "Women", "category": "Sweet Gourmand", "price": 30.0, "notes": "Inspired by Sweet Like Candy profile — Spun sugar, red berries, and whipped cream.", "image_url": None},
+    {"id": "w18", "name": "Amber Seduction", "gender": "Women", "category": "Warm Spice", "price": 30.0, "notes": "Inspired by Amber Rouge profile — Amber resins, plum, and warm cinnamon.", "image_url": None},
+    {"id": "w19", "name": "Island Coconut", "gender": "Women", "category": "Tropical Fresh", "price": 30.0, "notes": "Inspired by Bronze Goddess profile — Toasted coconut, tiare flower, and vanilla bean.", "image_url": None},
+    {"id": "w20", "name": "Radiant Goddess", "gender": "Women", "category": "Oriental Floral", "price": 30.0, "notes": "Inspired by Olympea profile — Salty vanilla, water jasmine, and ginger lily.", "image_url": None},
+    {"id": "w21", "name": "Cozy Cashmere", "gender": "Women", "category": "Warm & Cozy", "price": 30.0, "notes": "Inspired by Warm Cashmere profile — Soft cashmere, sandalwood, and white amber.", "image_url": None},
+    {"id": "w22", "name": "Pink Freesia", "gender": "Women", "category": "Fresh Floral", "price": 30.0, "notes": "Inspired by English Pear & Freesia profile — King William pear, white freesia, and patchouli.", "image_url": None},
+    {"id": "w23", "name": "Luminous Pearl", "gender": "Women", "category": "Clean Floral", "price": 30.0, "notes": "Inspired by Pure Poison profile — White lily, bergamot, and sheer musk.", "image_url": None},
+    {"id": "w24", "name": "Caramel Mist", "gender": "Women", "category": "Sweet Gourmand", "price": 30.0, "notes": "Inspired by Cheirosa 62 profile — Warm caramel, salted butter, and vanilla.", "image_url": None},
+    {"id": "w25", "name": "Botanical Garden", "gender": "Women", "category": "Green Floral", "price": 30.0, "notes": "Inspired by Gucci Bloom profile — Tuberose, jasmine, and Rangoon creeper.", "image_url": None},
+    {"id": "w26", "name": "Midnight Rose", "gender": "Women", "category": "Fruity Floral", "price": 30.0, "notes": "Inspired by Tresor Midnight Rose profile — Raspberry, rose absolute, and vanilla spice.", "image_url": None},
+    {"id": "w27", "name": "Golden Aura", "gender": "Women", "category": "Warm Amber", "price": 30.0, "notes": "Inspired by Grand Soir profile — Honey, benzoin resin, and rich amber.", "image_url": None},
+    {"id": "w28", "name": "Wild Blackberry", "gender": "Women", "category": "Fruity Woody", "price": 30.0, "notes": "Inspired by Blackberry & Bay profile — Blackberry juice, bay leaves, and cedarwood.", "image_url": None},
+    {"id": "w29", "name": "Heavenly Musk", "gender": "Women", "category": "Clean Skin Musk", "price": 30.0, "notes": "Inspired by Glossier You profile — White musk, iris, and subtle cotton notes.", "image_url": None},
+    {"id": "w30", "name": "Elysian Breeze", "gender": "Women", "category": "Fresh Aquatic", "price": 30.0, "notes": "Inspired by L'Imperatrice profile — Water mint, water lily, and cedar.", "image_url": None}
+]
+
+def sync_inventory_defaults():
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    for item in FRAGRANCE_CATALOG:
+        c.execute("SELECT stock_level FROM inventory WHERE item_id = ?", (item["id"],))
+        row = c.fetchone()
+        if not row:
+            c.execute(
+                "INSERT INTO inventory (item_id, item_name, stock_level, initial_stock) VALUES (?, ?, ?, ?)",
+                (item["id"], item["name"], DEFAULT_STOCK_PER_ITEM, DEFAULT_STOCK_PER_ITEM)
+            )
     conn.commit()
     conn.close()
 
-def calculate_order_total(quantity):
-    qty = int(quantity)
-    if qty <= 0:
-        return 0.0, 0.0, 0.0
+sync_inventory_defaults()
+
+# Database Helper Functions
+def get_current_30_day_cycle():
+    now = datetime.now()
+    start_of_year = datetime(now.year, 1, 1)
+    days_passed = (now - start_of_year).days
+    cycle_num = (days_passed // 30) + 1
+    return f"CYCLE-{now.year}-30D-{cycle_num:02d}"
+
+def save_order_to_db(name, email, phone, address, items_summary, qty, subtotal, discount, total, payment_method, is_priority, notes, cart_items):
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    order_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    cycle_id = get_current_30_day_cycle()
+    status = "Priority Preorder Pending" if is_priority else "Pending Payment"
     
-    subtotal = float(qty * 45.00)
-    discount_amount = subtotal * 0.20 if subtotal > 100.00 else 0.0
-    final_total = subtotal - discount_amount
-    return final_total, subtotal, discount_amount
-
-def calculate_cart_totals(cart_items):
-    total_qty = sum(item["quantity"] for item in cart_items)
-    subtotal = float(total_qty * 45.00)
-    discount_amount = subtotal * 0.20 if subtotal > 100.00 else 0.0
-    final_total = subtotal - discount_amount
-    return final_total, subtotal, discount_amount, total_qty
-
-def restock_item(product_code, add_qty):
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("UPDATE inventory SET stock_quantity = stock_quantity + ? WHERE product_code = ?", (add_qty, product_code))
+    c.execute('''
+        INSERT INTO orders (
+            order_date, customer_name, customer_email, customer_phone, 
+            shipping_address, items_summary, total_qty, subtotal, 
+            discount_applied, final_total, payment_method, status, is_priority, cycle_id, notes
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (order_date, name, email, phone, address, items_summary, qty, subtotal, discount, total, payment_method, status, int(is_priority), cycle_id, notes))
+    
+    for item_id, item_qty in cart_items.items():
+        c.execute("UPDATE inventory SET stock_level = stock_level - ? WHERE item_id = ?", (item_qty, item_id))
+        
     conn.commit()
     conn.close()
 
-PRICE_PER_BOTTLE = 45.00
-LOCAL_BOTTLE_IMG = "images/bottles.png"
-LOCAL_QR_IMG = "images/zelle_qr.png"
-LOCAL_CASHAPP_QR_IMG = "images/cashapp_qr.png"
-LOCAL_VENMO_QR_IMG = "images/venmo_qr.png"
-LOCAL_CATALOG_QR_IMG = "images/Catalog_qr.png.jpg"
+def search_orders(query, is_admin=False):
+    conn = sqlite3.connect(DB_FILE)
+    q = f"%{query}%"
+    if is_admin:
+        df = pd.read_sql_query(
+            "SELECT * FROM orders WHERE id LIKE ? OR customer_name LIKE ? OR customer_email LIKE ? OR customer_phone LIKE ? ORDER BY id DESC",
+            conn, params=(q, q, q, q)
+        )
+    else:
+        df = pd.read_sql_query(
+            "SELECT id, order_date, customer_name, items_summary, total_qty, final_total, status, is_priority, cycle_id FROM orders WHERE customer_email LIKE ? OR customer_phone LIKE ? ORDER BY id DESC",
+            conn, params=(q, q)
+        )
+    conn.close()
+    return df
 
-# Initialize Session State Cart
-if "cart_items" not in st.session_state:
-    st.session_state.cart_items = []
+def get_all_orders():
+    conn = sqlite3.connect(DB_FILE)
+    df = pd.read_sql_query("SELECT * FROM orders ORDER BY id DESC", conn)
+    conn.close()
+    return df
 
-# --- SIDEBAR ACCESS INTERFACE ---
-st.sidebar.markdown("### 🔒 System Portal")
-access_mode = "🛍️ Public Storefront"
+def update_order_status(order_id, new_status):
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    c.execute("UPDATE orders SET status = ? WHERE id = ?", (new_status, order_id))
+    conn.commit()
+    conn.close()
 
-with st.sidebar.expander("Staff Portal", expanded=False):
-    password = st.text_input("Enter Admin Password:", type="password", key="admin_password_input")
+def get_inventory_status():
+    conn = sqlite3.connect(DB_FILE)
+    df = pd.read_sql_query("SELECT * FROM inventory", conn)
+    conn.close()
+    return df
 
-if password == "Safe9uard-tf80":
-    st.sidebar.success("Authenticated")
-    access_mode = st.sidebar.radio("View Mode", ["🛍️ Public Storefront", "💼 Owner Dashboard"])
-elif password:
-    st.sidebar.error("Incorrect Password")
+def update_item_stock(item_id, new_stock):
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    c.execute("UPDATE inventory SET stock_level = ? WHERE item_id = ?", (new_stock, item_id))
+    conn.commit()
+    conn.close()
 
 # ==========================================
-# PUBLIC VIEW: ONLINE STOREFRONT
+# SESSION STATE & CART
 # ==========================================
-if access_mode == "🛍️ Public Storefront":
-    cart_count = sum(item["quantity"] for item in st.session_state.cart_items)
-    cart_tab_label = f"🛒 Shopping Cart ({cart_count})"
+if "cart" not in st.session_state:
+    st.session_state.cart = {}
+
+def add_to_cart(item_id):
+    if item_id in st.session_state.cart:
+        st.session_state.cart[item_id] += 1
+    else:
+        st.session_state.cart[item_id] = 1
+    st.toast("Added to bag!", icon="🛍️")
+
+# ==========================================
+# SIDEBAR NAVIGATION
+# ==========================================
+st.sidebar.title("✨ T Fragrances")
+st.sidebar.caption("50ml Clear Bottle Luxury Impressions")
+
+search_term = st.sidebar.text_input("🔍 Search fragrance catalog...", "").lower()
+selected_gender = st.sidebar.radio("Collection Filter", ["All", "Men", "Women"])
+priority_only = st.sidebar.checkbox("🔥 Show Priority Preorders Only")
+
+st.sidebar.markdown("---")
+st.sidebar.subheader("🛒 Shopping Bag Summary")
+
+total_qty = sum(st.session_state.cart.values())
+raw_subtotal = sum(
+    next(item["price"] for item in FRAGRANCE_CATALOG if item["id"] == i_id) * qty
+    for i_id, qty in st.session_state.cart.items()
+)
+
+discount = 0.0
+discount_label = ""
+
+if raw_subtotal >= 100.0:
+    discount = 0.20
+    discount_label = "20% OFF (Spend $100+ Tier)"
+elif total_qty >= 3:
+    discount = 0.15
+    discount_label = "15% OFF (3+ Items Tier)"
+elif total_qty == 2:
+    discount = 0.10
+    discount_label = "10% OFF (2 Items Tier)"
+
+final_subtotal = raw_subtotal * (1 - discount)
+
+st.sidebar.write(f"**Items in Bag:** {total_qty}")
+if discount > 0:
+    st.sidebar.write(f"**Applied Discount:** {discount_label}")
+    st.sidebar.write(f"~~Original: ${raw_subtotal:.2f}~~")
+st.sidebar.subheader(f"Total: ${final_subtotal:.2f}")
+
+# ==========================================
+# MAIN INTERFACE
+# ==========================================
+st.title("T Fragrances POS & Master Portal")
+
+with st.expander("ℹ️ Legal, Brand & Allergy Notices"):
+    st.write(f"**Trademark Notice:** {DISCLAIMER_TEXT}")
+    st.write("---")
+    st.warning(ALLERGY_DISCLAIMER_TEXT)
+
+filtered_catalog = FRAGRANCE_CATALOG
+
+if selected_gender != "All":
+    filtered_catalog = [x for x in filtered_catalog if x["gender"] == selected_gender]
+
+if search_term:
+    filtered_catalog = [
+        x for x in filtered_catalog 
+        if search_term in x["name"].lower() or search_term in x["notes"].lower() or search_term in x["category"].lower()
+    ]
+
+inventory_df = get_inventory_status().set_index("item_id")
+
+if priority_only:
+    filtered_catalog = [
+        x for x in filtered_catalog 
+        if (inventory_df.loc[x["id"], "stock_level"] if x["id"] in inventory_df.index else 5) <= 0
+    ]
+
+tabs = st.tabs(["🛍️ Browse Catalog", "🛒 Checkout", "🔍 Customer Order Lookup", "🔒 Master Admin & Inventory"])
+
+# ------------------------------------------
+# TAB 1: BROWSE CATALOG
+# ------------------------------------------
+with tabs[0]:
+    st.caption(f"Showing {len(filtered_catalog)} scents | Retail Price: $30.00 each")
     
-    store_tab, cart_tab, track_tab = st.tabs(["🛍️ Order Online", cart_tab_label, "📦 Track My Order"])
+    cols = st.columns(2)
+    for idx, item in enumerate(filtered_catalog):
+        col = cols[idx % 2]
+        stock_level = inventory_df.loc[item["id"], "stock_level"] if item["id"] in inventory_df.index else 5
+        
+        with col:
+            with st.container(border=True):
+                image_path = item.get("image_url")
+                if image_path and (image_path.startswith("http") or os.path.exists(image_path)):
+                    img_col, text_col = st.columns([1, 1.3])
+                    with img_col:
+                        st.image(image_path, use_container_width=True)
+                    with text_col:
+                        st.markdown(f"### {item['name']}")
+                        st.caption(f"**{item['gender']}'s** • {item['category']}")
+                        st.write(f"*{item['notes']}*")
+                        st.subheader(f"${item['price']:.2f}")
+                else:
+                    st.markdown(f"### {item['name']}")
+                    st.caption(f"**{item['gender']}'s** • {item['category']}")
+                    st.write(f"*{item['notes']}*")
+                    st.subheader(f"${item['price']:.2f}")
+                
+                if stock_level <= 0:
+                    st.error("🔥 Out of Stock — Priority Preorder Available")
+                elif stock_level <= 2:
+                    st.warning(f"⚠️ Low Stock: Only {stock_level} left!")
+                else:
+                    st.caption(f"Stock: {stock_level} available")
+                    
+                st.button(
+                    "Add to Bag", 
+                    key=f"btn_{item['id']}", 
+                    on_click=add_to_cart, 
+                    args=(item['id'],)
+                )
+
+# ------------------------------------------
+# TAB 2: CHECKOUT
+# ------------------------------------------
+with tabs[1]:
+    st.header("Order Settlement")
     
-    # TAB 1: PRODUCT CATALOG & ADD TO CART
-    with store_tab:
-        if "last_order_id" in st.session_state:
-            order_id = st.session_state.last_order_id
-            order_total = st.session_state.get('last_order_total', PRICE_PER_BOTTLE)
-            selected_method = st.session_state.get('last_order_method', 'Zelle')
-            is_preorder = st.session_state.get("last_order_preorder", 0)
-
-            if is_preorder == 1:
-                st.success(f"⭐ Priority Preorder Reserved! ID: `{order_id}`")
-            else:
-                st.success(f"🎉 Order Placed Successfully! ID: `{order_id}`")
-
-            st.markdown(f"### 💰 Send Payment via **{selected_method}**:")
-
-            if selected_method == "Zelle":
-                st.info(f"Send **${order_total:.2f}** via **Zelle**:\n\n• **Recipient Phone:** `863-236-4196`\n• **Name:** Alexander Thompson\n• **Memo:** Order `{order_id}`")
-                if os.path.exists(LOCAL_QR_IMG):
-                    st.image(LOCAL_QR_IMG, caption="Scan with your banking app to Zelle instantly.", width=300)
-            elif selected_method == "Cash App":
-                st.info(f"Send **${order_total:.2f}** via **Cash App**:\n\n• **Cashtag:** `$JaMekaHowell`\n• **Name:** Jameka Howell\n• **Memo:** Order `{order_id}`")
-                if os.path.exists(LOCAL_CASHAPP_QR_IMG):
-                    st.image(LOCAL_CASHAPP_QR_IMG, caption="Scan with Cash App to pay instantly.", width=300)
-            elif selected_method == "Venmo":
-                st.info(f"Send **${order_total:.2f}** via **Venmo**:\n\n• **Username:** `@Jameka-Hatton`\n• **Name:** Jameka Hatton\n• **Memo:** Order `{order_id}`")
-                if os.path.exists(LOCAL_VENMO_QR_IMG):
-                    st.image(LOCAL_VENMO_QR_IMG, caption="Scan with Venmo to pay instantly.", width=300)
-            else:
-                st.info(f"Send **${order_total:.2f}** via **Apple Pay**:\n\n• **Send to Phone:** `863-236-4196`\n• **Note/Message:** Include Order ID `{order_id}`")
-
-            st.warning(f"⚠️ **IMPORTANT:** Always include your Order ID **`{order_id}`** in the payment note/memo!")
-            
-            if st.button("Place Another Order / Clear Screen"):
-                for key in ["cart_items", "web_cart", "last_order_id", "last_order_total", "last_order_method", "last_order_preorder"]:
-                    st.session_state.pop(key, None)
+    if not st.session_state.cart:
+        st.info("Your bag is currently empty.")
+    else:
+        st.subheader("Selected Items")
+        cart_data = []
+        summary_list = []
+        
+        for item_id, qty in st.session_state.cart.items():
+            product = next(p for p in FRAGRANCE_CATALOG if p["id"] == item_id)
+            cart_data.append({
+                "Product Name": product["name"],
+                "Category": product["category"],
+                "Qty": qty,
+                "Price": f"${product['price']:.2f}",
+                "Total": f"${product['price'] * qty:.2f}"
+            })
+            summary_list.append(f"{qty}x {product['name']}")
+        
+        st.table(pd.DataFrame(cart_data))
+        
+        c1, c2 = st.columns(2)
+        with c1:
+            st.markdown(f"**Total Items:** {total_qty}")
+            st.markdown(f"**Applied Discount Tier:** {discount_label if discount > 0 else 'None'}")
+            st.markdown(f"### Final Subtotal: ${final_subtotal:.2f}")
+        with c2:
+            if st.button("Clear Bag"):
+                st.session_state.cart = {}
                 st.rerun()
 
-        else:
-            st.subheader("🛍️ Place Your Order Online")
-            col_store_left, col_store_right = st.columns([3, 2])
+        st.markdown("---")
+        st.subheader("Customer Shipping & Contact Details")
+        
+        with st.form("checkout_form"):
+            col_a, col_b = st.columns(2)
+            with col_a:
+                name = st.text_input("Full Name *")
+                email = st.text_input("Email Address *")
+            with col_b:
+                phone = st.text_input("Phone Number *")
+                address = st.text_input("Shipping Address *")
             
-            with col_store_left:
-                with st.container(border=True):
-                    st.markdown("#### 1. Select Your Fragrance")
-                    cat_select = st.radio(
-                        "Product Family:", 
-                        ["Men's Premium Oils", "Women's Premium Oils", "Home & House Scents", "Custom / Full Catalog Request"], 
-                        horizontal=True
-                    )
-
-                if cat_select == "Custom / Full Catalog Request":
-                    st.info("✨ Scan the QR code or view our full master catalog, then type the fragrance name below!")
-                    if os.path.exists(LOCAL_CATALOG_QR_IMG):
-                        st.image(LOCAL_CATALOG_QR_IMG, caption="Scan to view Full Extended Catalog", width=250)
-                    
-                    custom_scent_input = st.text_input("Type Fragrance Name & Brand:")
-                    matching_obj = {
-                        "code": "CUSTOM-REQ",
-                        "scent": custom_scent_input.strip() if custom_scent_input.strip() else "Custom Catalog Request",
-                        "category": "Custom Request"
-                    }
-                    current_stock, initial_cap = 999, 999
-                    is_preorder_item = True
+            payment_method = st.radio("Settlement Channel", ["Cash App", "Zelle", "Venmo", "Cash POS (In-Person)"])
+            is_priority = st.checkbox("🔥 Mark as Priority Preorder (Bypasses standard queue for fastest fulfillment)")
+            notes = st.text_area("Special Delivery Instructions / Scent Preferences")
+            
+            st.caption("⚠️ **Safety Acknowledgement**")
+            allergy_ack = st.checkbox("I acknowledge that I have read the Allergy & Skin Sensitivity Disclaimer and agree to perform a skin patch test prior to use.")
+            
+            if st.form_submit_button("Place Order"):
+                if not (name and email and phone and address):
+                    st.error("Please fill in all required customer fields.")
+                elif not allergy_ack:
+                    st.error("Please acknowledge the Safety & Allergy Disclaimer prior to completing your order.")
                 else:
-                    st.markdown("#### 2. Choose Your Scent")
-                    active_list = men_catalog if cat_select == "Men's Premium Oils" else (women_catalog if cat_select == "Women's Premium Oils" else home_catalog)
-                    selected_display = st.selectbox("Available Inventory Index:", [item["label"] for item in active_list])
-                    matching_obj = next(item for item in active_list if item["label"] == selected_display)
-                    current_stock, initial_cap = get_item_stock(matching_obj["code"])
-                    is_preorder_item = current_stock <= 0
+                    items_str = ", ".join(summary_list)
+                    save_order_to_db(
+                        name, email, phone, address, 
+                        items_str, total_qty, raw_subtotal, 
+                        discount, final_subtotal, payment_method, 
+                        is_priority, notes, st.session_state.cart
+                    )
+                    st.success(f"Order successfully placed for {name}!")
+                    if is_priority:
+                        st.warning("⚡ Priority Preorder activated. Production scheduled on fast-track timeline.")
+                    st.info(f"Send total settlement of **${final_subtotal:.2f}** via **{payment_method}**.")
+                    st.session_state.cart = {}
 
-                    if is_preorder_item:
-                        st.info("⭐ **PRIORITY PREORDER ITEM:** Regular stock is reserved. Your order reserves a bottle in our priority batch!")
-                    elif current_stock <= (initial_cap * 0.5):
-                        st.warning(f"⚠️ Limited Regular Stock Remaining! (Only {current_stock} left)")
-                    else:
-                        st.caption(f"In Stock ({current_stock} available)")
+# ------------------------------------------
+# TAB 3: CUSTOMER ORDER LOOKUP
+# ------------------------------------------
+with tabs[2]:
+    st.header("🔍 Customer Order Lookup Portal")
+    st.write("Track active order status, preorders, and fulfillment updates.")
+    
+    user_query = st.text_input("Enter your registered Email Address or Phone Number:")
+    if st.button("Lookup Order Status") and user_query:
+        results = search_orders(user_query, is_admin=False)
+        if results.empty:
+            st.warning("No matching orders found. Please verify your details.")
+        else:
+            st.subheader(f"Found {len(results)} Order(s)")
+            for idx, row in results.iterrows():
+                with st.expander(f"Order #{row['id']} — Status: {row['status']} ({row['order_date']})"):
+                    st.write(f"**30-Day Master Cycle ID:** {row['cycle_id']}")
+                    st.write(f"**Purchased Items:** {row['items_summary']}")
+                    st.write(f"**Total Bottles:** {row['total_qty']}")
+                    st.write(f"**Total Amount:** ${row['final_total']:.2f}")
+                    if row['is_priority']:
+                        st.warning("🔥 Priority Preorder Queue Active")
 
-                max_selectable = 50 if is_preorder_item else max(1, current_stock)
-                web_qty = st.number_input("Quantity:", min_value=1, max_value=max_selectable, value=1, step=1)
-
-                if os.path.exists(LOCAL_BOTTLE_IMG):
-                    st.image(LOCAL_BOTTLE_IMG, use_container_width=True)
-
-                st.markdown("---")
-                if st.button("🛒 Add to Cart", type="primary", use_container_width=True):
-                    # Check if item already exists in cart
-                    existing = next((i for i in st.session_state.cart_items if i["code"] == matching_obj["code"] and i["scent"] == matching_obj["scent"]), None)
-                    if existing:
-                        existing["quantity"] += int(web_qty)
-                    else:
-                        st.session_state.cart_items.append({
-                            "code": matching_obj["code"],
-                            "scent": matching_obj["scent"],
-                            "category": cat_select,
-                            "quantity": int(web_qty),
-                            "is_preorder": 1 if is_preorder_item else 0,
-                            "unit_price": PRICE_PER_BOTTLE
-                        })
-                    st.success(f"Added {web_qty}x {matching_obj['scent']} to your cart!")
+# ------------------------------------------
+# TAB 4: MASTER ADMIN & RESTOCKING TOOL
+# ------------------------------------------
+with tabs[3]:
+    st.header("🔒 Master Admin Database & Restocking Management")
+    admin_pwd = st.text_input("Enter Admin Security Password", type="password")
+    
+    if admin_pwd == "admin123":
+        st.success("Staff Authentication Verified")
+        
+        st.subheader("📦 Inventory Tracking & Restocking Tool")
+        st.caption("Default Stock Level: 5 bottles. Low stock alerts trigger at 2 or fewer bottles.")
+        
+        inv_df = get_inventory_status()
+        inv_df["Status"] = inv_df["stock_level"].apply(
+            lambda x: "🚨 CRITICAL LOW (≤2)" if x <= 2 else ("⚠️ LOW (3)" if x == 3 else "✅ OK")
+        )
+        
+        low_stock_items = inv_df[inv_df["stock_level"] <= 2]
+        if not low_stock_items.empty:
+            st.error(f"⚠️ **RESTOCK ALERT:** {len(low_stock_items)} items are running low or out of stock!")
+            st.dataframe(low_stock_items[["item_id", "item_name", "stock_level", "Status"]], use_container_width=True)
+        else:
+            st.success("All fragrance stock levels are fully operational.")
+            
+        with st.expander("🛠️ Restock Tool — Batch or Single Item Update"):
+            stock_col1, stock_col2, stock_col3 = st.columns([2, 1, 1])
+            with stock_col1:
+                selected_item_id = st.selectbox(
+                    "Select Fragrance to Restock", 
+                    inv_df["item_id"] + " - " + inv_df["item_name"]
+                )
+                target_id = selected_item_id.split(" - ")[0]
+            with stock_col2:
+                new_qty = st.number_input("Set Restock Quantity", min_value=0, value=5)
+            with stock_col3:
+                st.write("")
+                st.write("")
+                if st.button("Apply Restock"):
+                    update_item_stock(target_id, new_qty)
+                    st.success("Inventory stock successfully updated!")
                     st.rerun()
 
-            with col_store_right:
-                st.markdown("### 🛒 Cart Quick View")
-                if not st.session_state.cart_items:
-                    st.info("Your shopping cart is currently empty. Add items from the catalog on the left!")
-                else:
-                    final_tot, sub_tot, disc_amt, total_bottles = calculate_cart_totals(st.session_state.cart_items)
-                    for idx, item in enumerate(st.session_state.cart_items):
-                        with st.container(border=True):
-                            st.write(f"**{item['scent']}**")
-                            st.write(f"• Code: `{item['code']}` | Qty: {item['quantity']}")
-                            st.write(f"• Price: ${item['unit_price'] * item['quantity']:.2f}")
-                            if item["is_preorder"]:
-                                st.caption("⭐ Priority Preorder Item")
-                    
-                    st.markdown("---")
-                    st.write(f"**Items:** {total_bottles} bottle(s)")
-                    st.write(f"**Subtotal:** ${sub_tot:.2f}")
-                    if disc_amt > 0:
-                        st.success(f"🎉 **20% Bulk Savings Applied:** -${disc_amt:.2f}")
-                    st.metric("Cart Subtotal", f"${final_tot:.2f}")
-
-    # TAB 2: AMAZON-STYLE CART CHECKOUT PAGE
-    with cart_tab:
-        st.subheader("🛒 Shopping Cart & Checkout")
-        if not st.session_state.cart_items:
-            st.info("Your Amazon-style cart is empty. Please select fragrances from the 'Order Online' tab!")
-        else:
-            col_cart_list, col_checkout_summary = st.columns([3, 2])
-            
-            with col_cart_list:
-                st.markdown("#### Items in your cart")
-                for idx, item in enumerate(st.session_state.cart_items):
-                    with st.container(border=True):
-                        c1, c2, c3 = st.columns([3, 2, 1])
-                        with c1:
-                            st.markdown(f"**{item['scent']}**")
-                            st.caption(f"Category: {item['category']} | Code: {item['code']}")
-                            if item["is_preorder"]:
-                                st.warning("⭐ Priority Preorder Batch")
-                        with c2:
-                            new_qty = st.number_input(f"Qty", min_value=1, max_value=100, value=item["quantity"], key=f"cart_qty_{idx}")
-                            st.session_state.cart_items[idx]["quantity"] = new_qty
-                        with c3:
-                            st.markdown(f"**${item['unit_price'] * item['quantity']:.2f}**")
-                            if st.button("Delete", key=f"del_cart_{idx}"):
-                                st.session_state.cart_items.pop(idx)
-                                st.rerun()
-
-            with col_checkout_summary:
-                final_tot, sub_tot, disc_amt, total_bottles = calculate_cart_totals(st.session_state.cart_items)
-                
-                with st.container(border=True):
-                    st.markdown("#### Shipping & Contact Info")
-                    cart_cust_name = st.text_input("Full Name:", key="cart_cust_name")
-                    cart_cust_phone = st.text_input("Phone Number:", key="cart_cust_phone")
-                    cart_cust_address = st.text_area("Shipping Address:", key="cart_cust_address")
-
-                    st.markdown("#### Select Settlement Channel")
-                    cart_payment_method = st.selectbox(
-                        "Payment Channel:",
-                        ["Zelle", "Cash App", "Venmo", "Apple Pay"],
-                        key="cart_payment_select"
-                    )
-
-                    st.markdown("---")
-                    st.markdown("#### Order Summary")
-                    st.write(f"Total Items: **{total_bottles} bottle(s)**")
-                    st.write(f"Subtotal: **${sub_tot:.2f}**")
-                    if disc_amt > 0:
-                        st.success(f"🎉 20% Discount (> $100): **-${disc_amt:.2f}**")
-                    st.markdown(f"### Total: :green[${final_tot:.2f}]")
-
-                    has_preorder = any(i["is_preorder"] == 1 for i in st.session_state.cart_items)
-                    place_btn_label = "Place Priority Preorder" if has_preorder else "Place Your Order"
-
-                    if st.button(place_btn_label, type="primary", use_container_width=True):
-                        if not cart_cust_name.strip() or not cart_cust_phone.strip() or not cart_cust_address.strip():
-                            st.error("⚠️ Please complete your Name, Phone Number, and Delivery Address.")
-                        else:
-                            generated_id = f"TF-WEB-{int(time.time())}"
-                            timestamp_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-                            conn = get_db_connection()
-                            cursor = conn.cursor()
-
-                            # Process each item in cart into database
-                            for item in st.session_state.cart_items:
-                                item_total, _, _ = calculate_order_total(item["quantity"])
-                                initial_status = "Preorder - Awaiting Batch Restock" if item["is_preorder"] == 1 else "Awaiting Settlement"
-
-                                cursor.execute("""
-                                    INSERT INTO orders_v2 
-                                    (order_id, timestamp, customer_name, phone_number, delivery_address, category, product_code, scent_name, quantity, total_paid, payment_method, is_preorder, status, order_type)
-                                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                                """, (
-                                    generated_id, timestamp_str, cart_cust_name.strip(), cart_cust_phone.strip(), cart_cust_address.strip(), 
-                                    item['category'], item['code'], item['scent'], item['quantity'], item_total, 
-                                    cart_payment_method, item['is_preorder'], initial_status, 'Online Store'
-                                ))
-
-                                if item["is_preorder"] == 0:
-                                    deduct_inventory(item['code'], item['quantity'])
-
-                            conn.commit()
-                            conn.close()
-
-                            st.session_state.last_order_id = generated_id
-                            st.session_state.last_order_total = final_tot
-                            st.session_state.last_order_method = cart_payment_method
-                            st.session_state.last_order_preorder = 1 if has_preorder else 0
-                            
-                            st.session_state.cart_items = []
-                            st.rerun()
-
-    # TAB 3: ORDER TRACKING
-    with track_tab:
-        st.subheader("📦 Real-Time Order Tracking")
-        cust_query_input = st.text_input("Order ID or Phone Number:", placeholder="TF-WEB-1234 or 863-555-0199", key="customer_track_input").strip()
-        
-        if st.button("Track Order", type="primary"):
-            if cust_query_input:
-                try:
-                    conn = get_db_connection()
-                    clean_input = cust_query_input.replace("-", "").replace(" ", "").replace("(", "").replace(")", "")
-                    query = """
-                        SELECT * FROM orders_v2 
-                        WHERE order_id = ? 
-                        OR phone_number = ?
-                        OR REPLACE(REPLACE(REPLACE(REPLACE(phone_number, '-', ''), ' ', ''), '(', ''), ')', '') LIKE ?
-                        ORDER BY timestamp DESC
-                    """
-                    rows = conn.execute(query, (cust_query_input, cust_query_input, f"%{clean_input}%")).fetchall()
-                    conn.close()
-                    
-                    if rows:
-                        st.markdown(f"### Found {len(rows)} Matching Item(s)")
-                        grouped_orders = {}
-                        for r in rows:
-                            oid = r["order_id"]
-                            if oid not in grouped_orders:
-                                grouped_orders[oid] = []
-                            grouped_orders[oid].append(r)
-
-                        for oid, items in grouped_orders.items():
-                            with st.container(border=True):
-                                first_item = items[0]
-                                status_raw = first_item["status"]
-                                status_emoji = "⭐" if "Preorder" in status_raw else ("📦" if "Paid" in status_raw else ("✅" if "Completed" in status_raw else "⏳"))
-                                status_color = "blue" if "Preorder" in status_raw or "Paid" in status_raw else ("green" if "Completed" in status_raw else "orange")
-                                    
-                                st.markdown(f"### Order ID: `{oid}`")
-                                st.markdown(f"#### Status: :{status_color}[{status_emoji} {status_raw}]")
-                                
-                                col_details_1, col_details_2 = st.columns(2)
-                                with col_details_1:
-                                    st.write(f"• **Customer:** {first_item['customer_name']}")
-                                    st.write(f"• **Phone:** {first_item['phone_number']}")
-                                    st.write(f"• **Order Date:** {first_item['timestamp']}")
-                                with col_details_2:
-                                    st.write(f"• **Settlement Channel:** {first_item['payment_method']}")
-                                    st.write(f"• **Shipping Address:** {first_item['delivery_address']}")
-
-                                st.markdown("**Purchased Items:**")
-                                for itm in items:
-                                    st.write(f"• {itm['scent_name']} ({itm['quantity']} bottle(s)) - ${itm['total_paid']:.2f}")
-                    else:
-                        st.error("No orders found matching that Order ID or Phone Number.")
-                except Exception as e:
-                    st.error(f"Error querying database: {e}")
-            else:
-                st.warning("Please enter an Order ID or Phone Number.")
-
-# ==========================================
-# PRIVATE VIEW: OWNER HUB & POS
-# ==========================================
-else:
-    st.subheader("💼 Master Business Operations Hub")
-    
-    conn = get_db_connection()
-    low_stock_df = pd.read_sql_query("SELECT product_code, category, scent_name, stock_quantity, initial_capacity FROM inventory WHERE stock_quantity <= (initial_capacity * 0.5)", conn)
-    preorder_count_df = pd.read_sql_query("SELECT COUNT(*) as count FROM orders_v2 WHERE is_preorder = 1 AND status LIKE '%Preorder%'", conn)
-    conn.close()
-
-    pending_preorders_count = preorder_count_df.iloc[0]["count"] if not preorder_count_df.empty else 0
-
-    if pending_preorders_count > 0:
-        st.info(f"⭐ **HIGH PRIORITY ACTION:** You have **{pending_preorders_count} pending Preorder(s)** waiting for batch fulfillment!")
-
-    if not low_stock_df.empty:
-        st.warning("⚠️ **AUTOMATED INVENTORY ALERT: LOW STOCK DETECTED!**")
-        for idx, row in low_stock_df.iterrows():
-            if row["stock_quantity"] == 0:
-                st.error(f"🚨 **{row['product_code']} - {row['scent_name']}**: OUT OF STOCK")
-            else:
-                st.write(f"⚠️ **{row['product_code']} - {row['scent_name']}**: {row['stock_quantity']} units left")
         st.markdown("---")
 
-    tab_preorders, tab_pos, tab_inventory, tab_web_orders, tab_track, tab_ops = st.tabs([
-        "⭐ Priority Preorders Queue",
-        "🛒 In-Person POS Terminal", 
-        "📦 Inventory Tracker", 
-        "📬 Pending Web Orders", 
-        "📦 Order Lookup", 
-        "🛡️ Master Database Ledger"
-    ])
-    
-    with tab_preorders:
-        st.markdown("### ⭐ Priority Preorder Fulfillment Queue")
-        conn = get_db_connection()
-        preorders_df = pd.read_sql_query("SELECT order_id, timestamp, customer_name, phone_number, delivery_address, product_code, scent_name, quantity, payment_method, total_paid, status FROM orders_v2 WHERE is_preorder = 1 ORDER BY timestamp ASC", conn)
-        conn.close()
+        st.subheader("🗓️ Master Order Database & Priority Queue")
         
-        if preorders_df.empty:
-            st.success("🎉 No pending preorders in queue!")
+        orders_df = get_all_orders()
+        
+        if orders_df.empty:
+            st.info("No orders currently recorded in the master database.")
         else:
-            st.dataframe(preorders_df, use_container_width=True)
-            col_p1, col_p2 = st.columns([2, 1])
-            with col_p1:
-                target_preorder = st.selectbox("Select Priority Preorder ID to Process:", preorders_df["order_id"].unique().tolist())
-            with col_p2:
-                preorder_action = st.radio("Preorder Status Update:", ["Mark as Batch Restocked & Processing", "Mark as Shipped / Completed", "Cancel Preorder"])
-                
-            if st.button("Update Preorder Status"):
-                new_p_status = "Paid & Processing" if "Processing" in preorder_action else ("Completed & Shipped" if "Completed" in preorder_action else "Cancelled")
-                conn = get_db_connection()
-                cursor = conn.cursor()
-                cursor.execute("UPDATE orders_v2 SET status = ? WHERE order_id = ?", (new_p_status, target_preorder))
-                conn.commit()
-                conn.close()
-                st.success(f"Priority Preorder {target_preorder} updated to '{new_p_status}'!")
-                st.rerun()
+            cycles = orders_df["cycle_id"].unique().tolist()
+            selected_cycle = st.selectbox("Filter Master Database by 30-Day Cycle Window", ["All Cycles"] + cycles)
+            
+            display_orders = orders_df if selected_cycle == "All Cycles" else orders_df[orders_df["cycle_id"] == selected_cycle]
+            
+            m1, m2, m3, m4 = st.columns(4)
+            m1.metric("Total Cycle Orders", len(display_orders))
+            m2.metric("Gross Revenue", f"${display_orders['final_total'].sum():.2f}")
+            m3.metric("Total Bottles Sold", int(display_orders['total_qty'].sum()))
+            m4.metric("Priority Preorders", int(display_orders['is_priority'].sum()))
+            
+            st.dataframe(display_orders, use_container_width=True)
 
-    with tab_pos:
-        st.markdown("### Hand-to-Hand Retail Register")
-        col_entry, col_invoice = st.columns([3, 2])
-        with col_entry:
-            with st.container(border=True):
-                cat_select = st.radio("In-Person Line Segment:", ["Men's Premium Oils", "Women's Premium Oils", "Home & House Scents"], horizontal=True, key="pos_cat")
-                active_list = men_catalog if cat_select == "Men's Premium Oils" else (women_catalog if cat_select == "Women's Premium Oils" else home_catalog)
-                selected_display = st.selectbox("Search master index:", [item["label"] for item in active_list], key="pos_scent")
-                matching_obj = next(item for item in active_list if item["label"] == selected_display)
-                
-                current_stock, initial_cap = get_item_stock(matching_obj["code"])
-                is_pos_preorder = current_stock <= 0
-                max_pos = 100 if is_pos_preorder else max(1, current_stock)
-                
-                pos_qty = st.number_input("In-Person Quantity:", min_value=1, max_value=max_pos, value=1, step=1, key="pos_qty_select")
-                client_name = st.text_input("Walk-in Customer Name:", placeholder="Jane Doe")
-                client_phone = st.text_input("Walk-in Customer Phone Number:", placeholder="863-555-0199")
-                payment_vector = st.selectbox("Settlement Channel:", ["Cash", "Zelle", "Cash App", "Venmo", "Apple Pay"])
-                generate_click = st.button("Process Live Checkout Configuration")
-                
-            if generate_click:
-                if not client_name.strip():
-                    st.error("Please enter a valid Customer Name.")
-                else:
-                    st.session_state.pos_cart = {
-                        "client": client_name.strip(),
-                        "phone": client_phone.strip() if client_phone.strip() else "N/A",
-                        "category": cat_select,
-                        "code": matching_obj["code"],
-                        "scent": matching_obj["scent"],
-                        "vector": payment_vector,
-                        "quantity": int(pos_qty),
-                        "price": float(PRICE_PER_BOTTLE * pos_qty),
-                        "is_preorder": 1 if is_pos_preorder else 0
-                    }
-                    
-        with col_invoice:
-            if "pos_cart" in st.session_state and st.session_state.pos_cart:
-                cart = st.session_state.pos_cart
-                st.metric("Immediate Cash Flow Collected", f"${cart['price']:.2f}")
-                st.write(f"• **Customer:** {cart['client']}")
-                st.write(f"• **Scent:** {cart['scent']} ({cart['quantity']} Unit(s))")
-                
-                if st.button("Commit Sale to Ledger"):
-                    generated_id = f"TF-POS-{random.randint(1000, 9999)}"
-                    timestamp_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    pos_status = "Preorder Recorded (In-Person)" if cart.get("is_preorder") == 1 else "Completed & Handed Over"
-                    
-                    conn = get_db_connection()
-                    cursor = conn.cursor()
-                    cursor.execute("""
-                        INSERT INTO orders_v2 (order_id, timestamp, customer_name, phone_number, delivery_address, category, product_code, scent_name, quantity, total_paid, payment_method, is_preorder, status, order_type)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """, (generated_id, timestamp_str, cart['client'], cart['phone'], 'In-Person Sale', cart['category'], cart['code'], cart['scent'], cart['quantity'], cart['price'], cart['vector'], cart.get("is_preorder", 0), pos_status, "POS Register"))
-                    conn.commit()
-                    conn.close()
-                    
-                    if cart.get("is_preorder") == 0:
-                        deduct_inventory(cart['code'], cart['quantity'])
-                    
-                    st.success(f"Transaction Recorded! Code: {generated_id}")
-                    st.session_state.pos_cart = None
+            st.subheader("Update Processing Status & Priority Preorders")
+            u1, u2, u3 = st.columns([1, 2, 1])
+            with u1:
+                target_order_id = st.number_input("Target Order ID", min_value=1, step=1)
+            with u2:
+                status_option = st.selectbox(
+                    "Set New Processing Status", 
+                    ["Pending Payment", "Priority Preorder Processing", "Paid / In Production", "Fulfilled / Shipped", "Cancelled"]
+                )
+            with u3:
+                st.write("")
+                st.write("")
+                if st.button("Update Order Status"):
+                    update_order_status(target_order_id, status_option)
+                    st.success(f"Order #{target_order_id} updated!")
                     st.rerun()
 
-    with tab_inventory:
-        st.markdown("### 📦 Inventory Stock Levels")
-        conn = get_db_connection()
-        inv_df = pd.read_sql_query("SELECT product_code AS Code, category AS Category, scent_name AS Scent, stock_quantity AS 'Stock Left', initial_capacity AS Capacity FROM inventory", conn)
-        conn.close()
-        st.dataframe(inv_df, use_container_width=True)
-        
-        col_r1, col_r2, col_r3 = st.columns([2, 1, 1])
-        with col_r1:
-            item_to_restock = st.selectbox("Select Scent to Restock:", [f"{item['code']} - {item['scent']}" for item in ALL_CATALOG_ITEMS])
-        with col_r2:
-            add_amount = st.number_input("Quantity to Add:", min_value=1, max_value=500, value=10, step=1)
-        with col_r3:
-            if st.button("Update Stock"):
-                target_code = item_to_restock.split(" - ")[0]
-                restock_item(target_code, int(add_amount))
-                st.success(f"Added {add_amount} units to {target_code}!")
-                st.rerun()
+    elif admin_pwd:
+        st.error("Invalid Security Password.")
 
-    with tab_web_orders:
-        st.markdown("### Online Orders Awaiting Verification")
-        conn = get_db_connection()
-        pending_df = pd.read_sql_query("SELECT order_id, timestamp, customer_name, phone_number, product_code, scent_name, quantity, payment_method, total_paid, status, is_preorder FROM orders_v2 WHERE order_type = 'Online Store' AND (status LIKE 'Awaiting%' OR status LIKE '%Preorder%')", conn)
-        conn.close()
-        if pending_df.empty:
-            st.success("No pending web orders require attention.")
-        else:
-            st.dataframe(pending_df, use_container_width=True)
-            target_order = st.selectbox("Select Order ID to update:", pending_df["order_id"].unique().tolist())
-            next_action = st.radio("Action:", ["Mark as Paid & Ready to Pack/Ship", "Convert to Priority Preorder Queue", "Cancel / Payment Rejected"])
-            if st.button("Execute Action Update"):
-                new_status = "Paid & Processing" if "Mark as Paid" in next_action else ("Preorder - Awaiting Batch Restock" if "Convert" in next_action else "Cancelled")
-                conn = get_db_connection()
-                cursor = conn.cursor()
-                cursor.execute("UPDATE orders_v2 SET status = ?, is_preorder = ? WHERE order_id = ?", (new_status, 1 if "Preorder" in new_status else 0, target_order))
-                conn.commit()
-                conn.close()
-                st.success(f"Order {target_order} updated!")
-                st.rerun()
-
-    with tab_track:
-        st.markdown("### System Pipeline Diagnostic Registry")
-        user_query_input = st.text_input("Input Order Code or Customer Phone Number:", placeholder="TF-WEB-1234").strip()
-        if st.button("Query Database"):
-            if user_query_input:
-                conn = get_db_connection()
-                results = conn.execute("SELECT * FROM orders_v2 WHERE order_id = ? OR phone_number = ?", (user_query_input, user_query_input)).fetchall()
-                conn.close()
-                if results:
-                    st.dataframe(pd.DataFrame([dict(r) for r in results]), use_container_width=True)
-                else:
-                    st.error("No transaction found.")
-
-    with tab_ops:
-        st.markdown("### Complete Global Financial Ledger Matrix")
-        conn = get_db_connection()
-        df_orders = pd.read_sql_query("SELECT * FROM orders_v2 ORDER BY timestamp DESC", conn)
-        conn.close()
-        if not df_orders.empty:
-            st.dataframe(df_orders, use_container_width=True)
-        else:
-            st.info("Ledger empty.")
-
-# --- GLOBAL FOOTER ---
+# ==========================================
+# FOOTER
+# ==========================================
 st.markdown("---")
-st.markdown("<div style='font-size: 0.8rem; color: #64748B;'><strong>LEGAL DISCLAIMER:</strong> T Fragrances products are independent creations and are not affiliated with, sponsored by, or endorsed by original designer brands. Reference names are strictly for scent classification.</div>", unsafe_allow_html=True)
+st.caption(f"**Legal Disclaimer:** {DISCLAIMER_TEXT}")
+st.caption(f"{ALLERGY_DISCLAIMER_TEXT}")
