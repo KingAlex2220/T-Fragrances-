@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import sqlite3
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # ==========================================
 # PAGE CONFIGURATION
@@ -17,11 +17,13 @@ st.set_page_config(
 # DATABASE SETUP & INITIALIZATION
 # ==========================================
 DB_FILE = "t_fragrances.db"
+DEFAULT_STOCK_PER_ITEM = 5  # Default 5 bottles per impression
 
 def init_db():
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
-    # Create Orders Table
+    
+    # Orders Table
     c.execute('''
         CREATE TABLE IF NOT EXISTS orders (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -37,40 +39,26 @@ def init_db():
             final_total REAL,
             payment_method TEXT,
             status TEXT,
+            is_priority INTEGER DEFAULT 0,
+            cycle_id TEXT,
             notes TEXT
         )
     ''')
+    
+    # Inventory Table
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS inventory (
+            item_id TEXT PRIMARY KEY,
+            item_name TEXT,
+            stock_level INTEGER,
+            initial_stock INTEGER
+        )
+    ''')
+    
     conn.commit()
     conn.close()
 
 init_db()
-
-def save_order_to_db(name, email, phone, address, items_summary, qty, subtotal, discount, total, payment_method, notes):
-    conn = sqlite3.connect(DB_FILE)
-    c = conn.cursor()
-    order_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    c.execute('''
-        INSERT INTO orders (
-            order_date, customer_name, customer_email, customer_phone, 
-            shipping_address, items_summary, total_qty, subtotal, 
-            discount_applied, final_total, payment_method, status, notes
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ''', (order_date, name, email, phone, address, items_summary, qty, subtotal, discount, total, payment_method, "Pending Payment", notes))
-    conn.commit()
-    conn.close()
-
-def get_all_orders():
-    conn = sqlite3.connect(DB_FILE)
-    df = pd.read_sql_query("SELECT * FROM orders ORDER BY id DESC", conn)
-    conn.close()
-    return df
-
-def update_order_status(order_id, new_status):
-    conn = sqlite3.connect(DB_FILE)
-    c = conn.cursor()
-    c.execute("UPDATE orders SET status = ? WHERE id = ?", (new_status, order_id))
-    conn.commit()
-    conn.close()
 
 # ==========================================
 # GLOBAL DISCLAIMER & CATALOG DATA
@@ -148,8 +136,98 @@ FRAGRANCE_CATALOG = [
     {"id": "w30", "name": "Elysian Breeze", "gender": "Women", "category": "Fresh Aquatic", "price": 45.0, "notes": "Inspired by L'Imperatrice profile — Water mint, water lily, and cedar."}
 ]
 
+# Sync Catalog with Default Stock (5 Bottles)
+def sync_inventory_defaults():
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    for item in FRAGRANCE_CATALOG:
+        c.execute("SELECT stock_level FROM inventory WHERE item_id = ?", (item["id"],))
+        row = c.fetchone()
+        if not row:
+            c.execute(
+                "INSERT INTO inventory (item_id, item_name, stock_level, initial_stock) VALUES (?, ?, ?, ?)",
+                (item["id"], item["name"], DEFAULT_STOCK_PER_ITEM, DEFAULT_STOCK_PER_ITEM)
+            )
+    conn.commit()
+    conn.close()
+
+sync_inventory_defaults()
+
+# Helper DB Functions
+def get_current_30_day_cycle():
+    now = datetime.now()
+    start_of_year = datetime(now.year, 1, 1)
+    days_passed = (now - start_of_year).days
+    cycle_num = (days_passed // 30) + 1
+    return f"CYCLE-{now.year}-30D-{cycle_num:02d}"
+
+def save_order_to_db(name, email, phone, address, items_summary, qty, subtotal, discount, total, payment_method, is_priority, notes, cart_items):
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    order_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    cycle_id = get_current_30_day_cycle()
+    status = "Priority Preorder Pending" if is_priority else "Pending Payment"
+    
+    # Save Order
+    c.execute('''
+        INSERT INTO orders (
+            order_date, customer_name, customer_email, customer_phone, 
+            shipping_address, items_summary, total_qty, subtotal, 
+            discount_applied, final_total, payment_method, status, is_priority, cycle_id, notes
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (order_date, name, email, phone, address, items_summary, qty, subtotal, discount, total, payment_method, status, int(is_priority), cycle_id, notes))
+    
+    # Deduct Stock
+    for item_id, item_qty in cart_items.items():
+        c.execute("UPDATE inventory SET stock_level = stock_level - ? WHERE item_id = ?", (item_qty, item_id))
+        
+    conn.commit()
+    conn.close()
+
+def search_orders(query, is_admin=False):
+    conn = sqlite3.connect(DB_FILE)
+    q = f"%{query}%"
+    if is_admin:
+        df = pd.read_sql_query(
+            "SELECT * FROM orders WHERE id LIKE ? OR customer_name LIKE ? OR customer_email LIKE ? OR customer_phone LIKE ? ORDER BY id DESC",
+            conn, params=(q, q, q, q)
+        )
+    else:
+        df = pd.read_sql_query(
+            "SELECT id, order_date, customer_name, items_summary, total_qty, final_total, status, is_priority, cycle_id FROM orders WHERE customer_email LIKE ? OR customer_phone LIKE ? ORDER BY id DESC",
+            conn, params=(q, q)
+        )
+    conn.close()
+    return df
+
+def get_all_orders():
+    conn = sqlite3.connect(DB_FILE)
+    df = pd.read_sql_query("SELECT * FROM orders ORDER BY id DESC", conn)
+    conn.close()
+    return df
+
+def update_order_status(order_id, new_status):
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    c.execute("UPDATE orders SET status = ? WHERE id = ?", (new_status, order_id))
+    conn.commit()
+    conn.close()
+
+def get_inventory_status():
+    conn = sqlite3.connect(DB_FILE)
+    df = pd.read_sql_query("SELECT * FROM inventory", conn)
+    conn.close()
+    return df
+
+def update_item_stock(item_id, new_stock):
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    c.execute("UPDATE inventory SET stock_level = ? WHERE item_id = ?", (new_stock, item_id))
+    conn.commit()
+    conn.close()
+
 # ==========================================
-# SESSION STATE INITIALIZATION
+# SESSION STATE & CART
 # ==========================================
 if "cart" not in st.session_state:
     st.session_state.cart = {}
@@ -162,16 +240,16 @@ def add_to_cart(item_id):
     st.toast("Added to bag!", icon="🛍️")
 
 # ==========================================
-# SIDEBAR NAVIGATION & CART SUMMARY
+# SIDEBAR NAVIGATION
 # ==========================================
 st.sidebar.title("✨ T Fragrances")
 st.sidebar.caption("50ml Clear Bottle Luxury Impressions")
 
-search_term = st.sidebar.text_input("🔍 Search fragrances...", "").lower()
+search_term = st.sidebar.text_input("🔍 Search catalog...", "").lower()
 selected_gender = st.sidebar.radio("Collection", ["All", "Men", "Women"])
 
 st.sidebar.markdown("---")
-st.sidebar.subheader("🛒 Your Shopping Bag")
+st.sidebar.subheader("🛒 Shopping Bag Summary")
 
 total_qty = sum(st.session_state.cart.values())
 raw_subtotal = sum(
@@ -179,12 +257,12 @@ raw_subtotal = sum(
     for i_id, qty in st.session_state.cart.items()
 )
 
-# Bulk Pricing Calculation
+# Bulk Discounts
 discount = 0.0
 if total_qty >= 3:
-    discount = 0.15  # 15% off for 3 or more
+    discount = 0.15
 elif total_qty == 2:
-    discount = 0.10  # 10% off for 2
+    discount = 0.10
 
 final_subtotal = raw_subtotal * (1 - discount)
 
@@ -195,15 +273,13 @@ if discount > 0:
 st.sidebar.subheader(f"Total: ${final_subtotal:.2f}")
 
 # ==========================================
-# MAIN CONTENT AREA
+# MAIN INTERFACE TABS
 # ==========================================
-st.title("T Fragrances Storefront & POS")
-st.write("Hand-crafted, long-lasting 50ml fragrance oils.")
+st.title("T Fragrances POS & Master Portal")
 
-with st.expander("ℹ️ Read Legal & Brand Notice"):
+with st.expander("ℹ️ Legal & Brand Notice"):
     st.write(DISCLAIMER_TEXT)
 
-# Filter Data
 filtered_catalog = FRAGRANCE_CATALOG
 if selected_gender != "All":
     filtered_catalog = [x for x in filtered_catalog if x["gender"] == selected_gender]
@@ -214,16 +290,20 @@ if search_term:
         if search_term in x["name"].lower() or search_term in x["notes"].lower() or search_term in x["category"].lower()
     ]
 
-# Navigation Tabs
-tabs = st.tabs(["🛍️ Browse Catalog", "🛒 Checkout & Order", "🔒 Admin Dashboard"])
+tabs = st.tabs(["🛍️ Browse Catalog", "🛒 Checkout", "🔍 Order Lookup", "🔒 Admin & Inventory"])
 
+# ------------------------------------------
 # TAB 1: BROWSE CATALOG
+# ------------------------------------------
 with tabs[0]:
     st.caption(f"Showing {len(filtered_catalog)} scents")
+    inventory_df = get_inventory_status().set_index("item_id")
     
     cols = st.columns(3)
     for idx, item in enumerate(filtered_catalog):
         col = cols[idx % 3]
+        stock_level = inventory_df.loc[item["id"], "stock_level"] if item["id"] in inventory_df.index else 5
+        
         with col:
             with st.container(border=True):
                 st.markdown(f"### {item['name']}")
@@ -231,6 +311,14 @@ with tabs[0]:
                 st.write(f"*{item['notes']}*")
                 st.subheader(f"${item['price']:.2f}")
                 
+                # Stock Alert Indicator
+                if stock_level <= 0:
+                    st.error("Out of Stock (Preorder Available)")
+                elif stock_level <= 2:
+                    st.warning(f"⚠️ Low Stock: Only {stock_level} left!")
+                else:
+                    st.caption(f"Stock: {stock_level} available")
+                    
                 st.button(
                     "Add to Bag", 
                     key=f"btn_{item['id']}", 
@@ -238,12 +326,14 @@ with tabs[0]:
                     args=(item['id'],)
                 )
 
-# TAB 2: CHECKOUT & ORDER (POS INTEGRATION)
+# ------------------------------------------
+# TAB 2: CHECKOUT & PRIORITY PREORDER
+# ------------------------------------------
 with tabs[1]:
-    st.header("Order Checkout")
+    st.header("Order Settlement")
     
     if not st.session_state.cart:
-        st.info("Your shopping bag is currently empty.")
+        st.info("Your bag is currently empty.")
     else:
         st.subheader("Selected Items")
         cart_data = []
@@ -262,96 +352,169 @@ with tabs[1]:
         
         st.table(pd.DataFrame(cart_data))
         
-        col_summary_1, col_summary_2 = st.columns(2)
-        with col_summary_1:
+        c1, c2 = st.columns(2)
+        with c1:
             st.markdown(f"**Total Items:** {total_qty}")
             st.markdown(f"**Applied Discount:** {int(discount * 100)}%")
-            st.markdown(f"### Final Total: ${final_subtotal:.2f}")
-        
-        with col_summary_2:
-            if st.button("Clear Shopping Bag"):
+            st.markdown(f"### Final Subtotal: ${final_subtotal:.2f}")
+        with c2:
+            if st.button("Clear Bag"):
                 st.session_state.cart = {}
                 st.rerun()
 
         st.markdown("---")
-        st.subheader("Customer Details & Settlement")
+        st.subheader("Customer Details")
         
         with st.form("checkout_form"):
-            c1, c2 = st.columns(2)
-            with c1:
+            col_a, col_b = st.columns(2)
+            with col_a:
                 name = st.text_input("Full Name *")
                 email = st.text_input("Email Address *")
-            with c2:
+            with col_b:
                 phone = st.text_input("Phone Number *")
                 address = st.text_input("Shipping Address *")
             
-            payment_method = st.radio("Select Payment Settlement Channel", ["Cash App", "Zelle", "Venmo", "Cash POS (In-Person)"])
-            notes = st.text_area("Special Instructions / Preorder Notes")
+            payment_method = st.radio("Settlement Channel", ["Cash App", "Zelle", "Venmo", "Cash POS (In-Person)"])
             
-            submit = st.form_submit_button("Submit & Record Order")
+            # Priority Preorder Checkbox
+            is_priority = st.checkbox("🔥 Mark as Priority Preorder (Bypasses standard queue for fastest fulfillment)")
             
-            if submit:
+            notes = st.text_area("Special Instructions / Delivery Notes")
+            
+            if st.form_submit_button("Place Order"):
                 if name and email and phone and address:
                     items_str = ", ".join(summary_list)
-                    
-                    # Save directly to SQLite database
                     save_order_to_db(
                         name, email, phone, address, 
                         items_str, total_qty, raw_subtotal, 
-                        discount, final_subtotal, payment_method, notes
+                        discount, final_subtotal, payment_method, 
+                        is_priority, notes, st.session_state.cart
                     )
-                    
-                    st.success(f"Order successfully placed for {name}!")
-                    st.info(f"Please send payment of **${final_subtotal:.2f}** via **{payment_method}**.")
+                    st.success(f"Order recorded for {name}!")
+                    if is_priority:
+                        st.warning("⚡ Priority Preorder active. Processing on accelerated timeline.")
+                    st.info(f"Send total payment of **${final_subtotal:.2f}** via **{payment_method}**.")
                     st.session_state.cart = {}
                 else:
-                    st.error("Please fill in all required fields marked with *.")
+                    st.error("Please fill in all required fields.")
 
-# TAB 3: ADMIN DASHBOARD (SQLITE BACKEND)
+# ------------------------------------------
+# TAB 3: ORDER LOOKUP (CUSTOMER & ADMIN)
+# ------------------------------------------
 with tabs[2]:
-    st.header("Admin Management Dashboard")
+    st.header("🔍 Order Lookup Portal")
+    st.write("Track order progress, preorders, and fulfillment updates.")
     
-    admin_password = st.text_input("Enter Staff Password", type="password")
+    user_query = st.text_input("Enter your Email Address or Phone Number:")
+    if st.button("Find My Order") and user_query:
+        results = search_orders(user_query, is_admin=False)
+        if results.empty:
+            st.warning("No orders found matching that query.")
+        else:
+            st.subheader(f"Found {len(results)} Order(s)")
+            for idx, row in results.iterrows():
+                with st.expander(f"Order #{row['id']} — Status: {row['status']} ({row['order_date']})"):
+                    st.write(f"**Cycle ID:** {row['cycle_id']}")
+                    st.write(f"**Items:** {row['items_summary']}")
+                    st.write(f"**Total Bottles:** {row['total_qty']}")
+                    st.write(f"**Amount Total:** ${row['final_total']:.2f}")
+                    if row['is_priority']:
+                        st.warning("🔥 Priority Preorder Processing")
+
+# ------------------------------------------
+# TAB 4: ADMIN & INVENTORY MANAGEMENT
+# ------------------------------------------
+with tabs[3]:
+    st.header("🔒 Master Admin & Inventory Control")
+    admin_pwd = st.text_input("Enter Admin Password", type="password")
     
-    if admin_password == "admin123":  # Default admin access key
+    if admin_pwd == "admin123":
         st.success("Authenticated as Staff")
+        
+        # --- 1. RE-STOCKING TOOL & ALERTS ---
+        st.subheader("📦 Inventory & Re-Stocking Alert System")
+        st.caption("Default Stock Level: 5 bottles per scent. Low stock alerts trigger at 50% (2 or fewer bottles).")
+        
+        inv_df = get_inventory_status()
+        
+        # Calculate Alerts
+        inv_df["Status"] = inv_df["stock_level"].apply(
+            lambda x: "🚨 CRITICAL LOW (≤50%)" if x <= 2 else ("⚠️ LOW" if x <= 3 else "✅ OK")
+        )
+        
+        low_stock_items = inv_df[inv_df["stock_level"] <= 2]
+        if not low_stock_items.empty:
+            st.error(f"⚠️ **RE-STOCK ALERT:** {len(low_stock_items)} items are at or below 50% stock level!")
+            st.dataframe(low_stock_items[["item_id", "item_name", "stock_level", "Status"]], use_container_width=True)
+        else:
+            st.success("All inventory levels are healthy.")
+            
+        with st.expander("🛠️ Re-Stock / Update Individual Inventory"):
+            stock_col1, stock_col2, stock_col3 = st.columns([2, 1, 1])
+            with stock_col1:
+                selected_item_id = st.selectbox(
+                    "Select Fragrance to Re-Stock", 
+                    inv_df["item_id"] + " - " + inv_df["item_name"]
+                )
+                target_id = selected_item_id.split(" - ")[0]
+            with stock_col2:
+                new_qty = st.number_input("Set New Stock Quantity", min_value=0, value=5)
+            with stock_col3:
+                st.write("")
+                st.write("")
+                if st.button("Update Stock"):
+                    update_item_stock(target_id, new_qty)
+                    st.success("Inventory updated!")
+                    st.rerun()
+
+        st.markdown("---")
+
+        # --- 2. MASTER 30-DAY ORDER DATABASE ---
+        st.subheader("🗓️ Master Order Database (30-Day Cycles)")
         
         orders_df = get_all_orders()
         
         if orders_df.empty:
-            st.info("No orders found in the database.")
+            st.info("No orders currently recorded.")
         else:
-            st.subheader("Recent Sales & Preorders")
+            # Active Cycle Filter
+            cycles = orders_df["cycle_id"].unique().tolist()
+            selected_cycle = st.selectbox("Filter by 30-Day Cycle Window", ["All Cycles"] + cycles)
             
-            # Metrics Overview
-            m1, m2, m3 = st.columns(3)
-            m1.metric("Total Orders", len(orders_df))
-            m2.metric("Total Revenue", f"${orders_df['final_total'].sum():.2f}")
-            m3.metric("Total Bottles Sold", int(orders_df['total_qty'].sum()))
+            display_orders = orders_df if selected_cycle == "All Cycles" else orders_df[orders_df["cycle_id"] == selected_cycle]
             
-            st.markdown("---")
-            st.dataframe(orders_df, use_container_width=True)
+            # Metrics
+            m1, m2, m3, m4 = st.columns(4)
+            m1.metric("Cycle Orders", len(display_orders))
+            m2.metric("Cycle Revenue", f"${display_orders['final_total'].sum():.2f}")
+            m3.metric("Bottles Sold", int(display_orders['total_qty'].sum()))
+            m4.metric("Priority Preorders", int(display_orders['is_priority'].sum()))
             
+            st.dataframe(display_orders, use_container_width=True)
+
             # Update Order Status
-            st.subheader("Update Order Status")
-            col_id, col_status, col_btn = st.columns([1, 2, 1])
-            
-            with col_id:
-                selected_id = st.number_input("Order ID", min_value=1, step=1)
-            with col_status:
-                new_status = st.selectbox("Status", ["Pending Payment", "Paid / Processing", "Fulfilled / Shipped", "Cancelled"])
-            with col_btn:
+            st.subheader("Update Order Status & Preorder Queue")
+            u1, u2, u3 = st.columns([1, 2, 1])
+            with u1:
+                target_order_id = st.number_input("Target Order ID", min_value=1, step=1)
+            with u2:
+                status_option = st.selectbox(
+                    "New Status", 
+                    ["Pending Payment", "Priority Preorder Processing", "Paid / In Production", "Fulfilled / Shipped", "Cancelled"]
+                )
+            with u3:
                 st.write("")
                 st.write("")
-                if st.button("Update Status"):
-                    update_order_status(selected_id, new_status)
-                    st.success(f"Order #{selected_id} updated to {new_status}")
+                if st.button("Apply Status Update"):
+                    update_order_status(target_order_id, status_option)
+                    st.success(f"Order #{target_order_id} updated!")
                     st.rerun()
-    elif admin_password:
-        st.error("Incorrect password.")
+
+    elif admin_pwd:
+        st.error("Incorrect Password.")
 
 # ==========================================
-# FOOTER & LEGAL DISCLAIMER
+# FOOTER
 # ==========================================
 st.markdown("---")
 st.caption(f"**Legal Disclaimer:** {DISCLAIMER_TEXT}")
