@@ -335,15 +335,18 @@ with tabs[0]:
         
         with col:
             with st.container(border=True):
-                if item.get("image_url"):
-                    img_col, text_col = st.columns([1, 1.3])
-                    with img_col:
-                        st.image(item["image_url"], use_container_width=True)
-                    with text_col:
-                        st.markdown(f"### {item['name']}")
-                        st.caption(f"**{item['gender']}'s** • {item['category']}")
-                        st.write(f"*{item['notes']}*")
-                        st.subheader(f"${item['price']:.2f}")
+                # Replace line 338 with this check:
+image_path = item.get("image_url")
+if image_path and (image_path.startswith("http") or os.path.exists(image_path)):
+    img_col, text_col = st.columns([1, 1.3])
+    with img_col:
+        st.image(image_path, use_container_width=True)
+    with text_col:
+        st.markdown(f"### {item['name']}")
+        st.caption(f"**{item['gender']}'s** • {item['category']}")
+        st.write(f"*{item['notes']}*")
+        st.subheader(f"${item['price']:.2f}")
+
                 else:
                     st.markdown(f"### {item['name']}")
                     st.caption(f"**{item['gender']}'s** • {item['category']}")
