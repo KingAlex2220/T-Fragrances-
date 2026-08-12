@@ -234,7 +234,7 @@ if access_mode == "🛍️ Public Storefront":
                 st.markdown("#### 4. Select Settlement Channel")
                 payment_method = st.selectbox(
                     "Payment / Settlement Channel:",
-                    ["Zelle", "Cash App", "Venmo", "Apple Pay / Text Payment"]
+                    ["Zelle", "Cash App", "Venmo",]
                 )
                 
                 button_label = "Review Priority Preorder Invoice" if is_preorder_item else "Review Order Invoice"
