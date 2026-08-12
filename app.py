@@ -111,7 +111,7 @@ FRAGRANCE_CATALOG = [
             "Inspired by Sauvage profile — Crisp bergamot, pepper, and rich"
             " ambroxan."
         ),
-        "image_url": None,
+        "image_url": "savage_spirit.png",  # <-- Configured for side-by-side view
     },
     {
         "id": "m02",
