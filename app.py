@@ -1,15 +1,76 @@
 import streamlit as st
 import pandas as pd
+import sqlite3
+from datetime import datetime
 
 # ==========================================
 # PAGE CONFIGURATION
 # ==========================================
 st.set_page_config(
-    page_title="T Fragrances | Luxury Perfume Oils",
+    page_title="T Fragrances | Storefront & POS",
     page_icon="✨",
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+# ==========================================
+# DATABASE SETUP & INITIALIZATION
+# ==========================================
+DB_FILE = "t_fragrances.db"
+
+def init_db():
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    # Create Orders Table
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS orders (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            order_date TEXT,
+            customer_name TEXT,
+            customer_email TEXT,
+            customer_phone TEXT,
+            shipping_address TEXT,
+            items_summary TEXT,
+            total_qty INTEGER,
+            subtotal REAL,
+            discount_applied REAL,
+            final_total REAL,
+            payment_method TEXT,
+            status TEXT,
+            notes TEXT
+        )
+    ''')
+    conn.commit()
+    conn.close()
+
+init_db()
+
+def save_order_to_db(name, email, phone, address, items_summary, qty, subtotal, discount, total, payment_method, notes):
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    order_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    c.execute('''
+        INSERT INTO orders (
+            order_date, customer_name, customer_email, customer_phone, 
+            shipping_address, items_summary, total_qty, subtotal, 
+            discount_applied, final_total, payment_method, status, notes
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (order_date, name, email, phone, address, items_summary, qty, subtotal, discount, total, payment_method, "Pending Payment", notes))
+    conn.commit()
+    conn.close()
+
+def get_all_orders():
+    conn = sqlite3.connect(DB_FILE)
+    df = pd.read_sql_query("SELECT * FROM orders ORDER BY id DESC", conn)
+    conn.close()
+    return df
+
+def update_order_status(order_id, new_status):
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    c.execute("UPDATE orders SET status = ? WHERE id = ?", (new_status, order_id))
+    conn.commit()
+    conn.close()
 
 # ==========================================
 # GLOBAL DISCLAIMER & CATALOG DATA
@@ -93,19 +154,12 @@ FRAGRANCE_CATALOG = [
 if "cart" not in st.session_state:
     st.session_state.cart = {}
 
-# ==========================================
-# HELPER FUNCTIONS
-# ==========================================
 def add_to_cart(item_id):
     if item_id in st.session_state.cart:
         st.session_state.cart[item_id] += 1
     else:
         st.session_state.cart[item_id] = 1
     st.toast("Added to bag!", icon="🛍️")
-
-def remove_from_cart(item_id):
-    if item_id in st.session_state.cart:
-        del st.session_state.cart[item_id]
 
 # ==========================================
 # SIDEBAR NAVIGATION & CART SUMMARY
@@ -125,12 +179,12 @@ raw_subtotal = sum(
     for i_id, qty in st.session_state.cart.items()
 )
 
-# Bulk Pricing Rules
+# Bulk Pricing Calculation
 discount = 0.0
 if total_qty >= 3:
-    discount = 0.15  # 15% off for 3 or more bottles
+    discount = 0.15  # 15% off for 3 or more
 elif total_qty == 2:
-    discount = 0.10  # 10% off for 2 bottles
+    discount = 0.10  # 10% off for 2
 
 final_subtotal = raw_subtotal * (1 - discount)
 
@@ -143,10 +197,9 @@ st.sidebar.subheader(f"Total: ${final_subtotal:.2f}")
 # ==========================================
 # MAIN CONTENT AREA
 # ==========================================
-st.title("T Fragrances")
+st.title("T Fragrances Storefront & POS")
 st.write("Hand-crafted, long-lasting 50ml fragrance oils.")
 
-# Display Legal Notice at the top of the store
 with st.expander("ℹ️ Read Legal & Brand Notice"):
     st.write(DISCLAIMER_TEXT)
 
@@ -161,9 +214,10 @@ if search_term:
         if search_term in x["name"].lower() or search_term in x["notes"].lower() or search_term in x["category"].lower()
     ]
 
-# Render Catalog Grid
-tabs = st.tabs(["🛍️ Browse Catalog", "🛒 Checkout & Order"])
+# Navigation Tabs
+tabs = st.tabs(["🛍️ Browse Catalog", "🛒 Checkout & Order", "🔒 Admin Dashboard"])
 
+# TAB 1: BROWSE CATALOG
 with tabs[0]:
     st.caption(f"Showing {len(filtered_catalog)} scents")
     
@@ -184,6 +238,7 @@ with tabs[0]:
                     args=(item['id'],)
                 )
 
+# TAB 2: CHECKOUT & ORDER (POS INTEGRATION)
 with tabs[1]:
     st.header("Order Checkout")
     
@@ -192,6 +247,8 @@ with tabs[1]:
     else:
         st.subheader("Selected Items")
         cart_data = []
+        summary_list = []
+        
         for item_id, qty in st.session_state.cart.items():
             product = next(p for p in FRAGRANCE_CATALOG if p["id"] == item_id)
             cart_data.append({
@@ -201,6 +258,7 @@ with tabs[1]:
                 "Price": f"${product['price']:.2f}",
                 "Total": f"${product['price'] * qty:.2f}"
             })
+            summary_list.append(f"{qty}x {product['name']}")
         
         st.table(pd.DataFrame(cart_data))
         
@@ -216,7 +274,7 @@ with tabs[1]:
                 st.rerun()
 
         st.markdown("---")
-        st.subheader("Customer Details")
+        st.subheader("Customer Details & Settlement")
         
         with st.form("checkout_form"):
             c1, c2 = st.columns(2)
@@ -227,18 +285,70 @@ with tabs[1]:
                 phone = st.text_input("Phone Number *")
                 address = st.text_input("Shipping Address *")
             
-            payment_method = st.radio("Select Payment Method", ["Cash App", "Zelle", "Venmo"])
-            notes = st.text_area("Special Delivery Instructions (Optional)")
+            payment_method = st.radio("Select Payment Settlement Channel", ["Cash App", "Zelle", "Venmo", "Cash POS (In-Person)"])
+            notes = st.text_area("Special Instructions / Preorder Notes")
             
-            submit = st.form_submit_button("Place Order Preorder")
+            submit = st.form_submit_button("Submit & Record Order")
             
             if submit:
                 if name and email and phone and address:
-                    st.success(f"Thank you, {name}! Your preorder has been received.")
-                    st.info(f"Please complete your payment of **${final_subtotal:.2f}** via **{payment_method}** to finalize delivery.")
+                    items_str = ", ".join(summary_list)
+                    
+                    # Save directly to SQLite database
+                    save_order_to_db(
+                        name, email, phone, address, 
+                        items_str, total_qty, raw_subtotal, 
+                        discount, final_subtotal, payment_method, notes
+                    )
+                    
+                    st.success(f"Order successfully placed for {name}!")
+                    st.info(f"Please send payment of **${final_subtotal:.2f}** via **{payment_method}**.")
                     st.session_state.cart = {}
                 else:
                     st.error("Please fill in all required fields marked with *.")
+
+# TAB 3: ADMIN DASHBOARD (SQLITE BACKEND)
+with tabs[2]:
+    st.header("Admin Management Dashboard")
+    
+    admin_password = st.text_input("Enter Staff Password", type="password")
+    
+    if admin_password == "admin123":  # Default admin access key
+        st.success("Authenticated as Staff")
+        
+        orders_df = get_all_orders()
+        
+        if orders_df.empty:
+            st.info("No orders found in the database.")
+        else:
+            st.subheader("Recent Sales & Preorders")
+            
+            # Metrics Overview
+            m1, m2, m3 = st.columns(3)
+            m1.metric("Total Orders", len(orders_df))
+            m2.metric("Total Revenue", f"${orders_df['final_total'].sum():.2f}")
+            m3.metric("Total Bottles Sold", int(orders_df['total_qty'].sum()))
+            
+            st.markdown("---")
+            st.dataframe(orders_df, use_container_width=True)
+            
+            # Update Order Status
+            st.subheader("Update Order Status")
+            col_id, col_status, col_btn = st.columns([1, 2, 1])
+            
+            with col_id:
+                selected_id = st.number_input("Order ID", min_value=1, step=1)
+            with col_status:
+                new_status = st.selectbox("Status", ["Pending Payment", "Paid / Processing", "Fulfilled / Shipped", "Cancelled"])
+            with col_btn:
+                st.write("")
+                st.write("")
+                if st.button("Update Status"):
+                    update_order_status(selected_id, new_status)
+                    st.success(f"Order #{selected_id} updated to {new_status}")
+                    st.rerun()
+    elif admin_password:
+        st.error("Incorrect password.")
 
 # ==========================================
 # FOOTER & LEGAL DISCLAIMER
