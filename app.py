@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import sqlite3
-from datetime import datetime, timedelta
+from datetime import datetime
 
 # ==========================================
 # PAGE CONFIGURATION
@@ -14,7 +14,7 @@ st.set_page_config(
 )
 
 # ==========================================
-# DATABASE SETUP & INITIALIZATION
+# DATABASE SETUP & AUTO-MIGRATION
 # ==========================================
 DB_FILE = "t_fragrances.db"
 DEFAULT_STOCK_PER_ITEM = 5  # Default 5 bottles per impression
@@ -23,7 +23,7 @@ def init_db():
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
     
-    # Orders Table
+    # Create Orders Table if not existing
     c.execute('''
         CREATE TABLE IF NOT EXISTS orders (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -45,7 +45,18 @@ def init_db():
         )
     ''')
     
-    # Inventory Table
+    # Auto-Migration: Ensure new columns exist if table was created previously
+    c.execute("PRAGMA table_info(orders)")
+    existing_cols = [col[1] for col in c.fetchall()]
+    
+    if "is_priority" not in existing_cols:
+        c.execute("ALTER TABLE orders ADD COLUMN is_priority INTEGER DEFAULT 0")
+    if "cycle_id" not in existing_cols:
+        c.execute("ALTER TABLE orders ADD COLUMN cycle_id TEXT")
+    if "notes" not in existing_cols:
+        c.execute("ALTER TABLE orders ADD COLUMN notes TEXT")
+    
+    # Create Inventory Table
     c.execute('''
         CREATE TABLE IF NOT EXISTS inventory (
             item_id TEXT PRIMARY KEY,
