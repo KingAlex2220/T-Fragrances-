@@ -357,13 +357,25 @@ def add_to_cart(item_id):
 # ==========================================
 # URL QUERY PARAMS FOR REFERRAL TRACKING
 # ==========================================
+PARTNER_MAPPING = {
+    "alex": "Alexander Thompson",
+    "jameka": "Jameka Hatton",
+    "ray": "Ira Ray Thompson",
+    "eq": "Eriq Dior",
+    
+    
+}
+
 query_params = st.query_params
-active_referral = query_params.get("ref", "")
-if active_referral:
-  st.session_state["active_ref"] = active_referral.lower().strip()
+active_referral = query_params.get("ref", "").strip().lower()
+
+if active_referral in PARTNER_MAPPING:
+    st.session_state["active_ref"] = PARTNER_MAPPING[active_referral]
+elif active_referral:
+    st.session_state["active_ref"] = active_referral
 else:
-  if "active_ref" not in st.session_state:
-    st.session_state["active_ref"] = ""
+    if "active_ref" not in st.session_state:
+        st.session_state["active_ref"] = ""
 
 current_ref_tag = st.session_state.get("active_ref", "")
 
