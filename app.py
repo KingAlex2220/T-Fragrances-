@@ -84,9 +84,15 @@ def init_db():
             purchaser_name TEXT,
             recipient_email TEXT,
             status TEXT,
-            created_date TEXT
+            created_date TEXT,
+            payment_method TEXT
         )
     """)
+
+  c.execute("PRAGMA table_info(gift_cards)")
+  existing_gc_cols = [col[1] for col in c.fetchall()]
+  if "payment_method" not in existing_gc_cols:
+    c.execute("ALTER TABLE gift_cards ADD COLUMN payment_method TEXT")
 
   conn.commit()
   conn.close()
@@ -315,21 +321,6 @@ def update_item_stock(item_id, new_stock):
   c.execute(
       "UPDATE inventory SET stock_level = ? WHERE item_id = ?",
       (new_stock, item_id),
-  )
-  conn.commit()
-  conn.close()
-
-
-def create_gift_card(code, value, purchaser, recipient):
-  conn = sqlite3.connect(DB_FILE)
-  c = conn.cursor()
-  created_date = datetime.now().strftime("%Y-%m-%d")
-  c.execute(
-      """
-        INSERT OR REPLACE INTO gift_cards (code, initial_value, current_balance, purchaser_name, recipient_email, status, created_date)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    """,
-      (code, value, value, purchaser, recipient, "Active", created_date),
   )
   conn.commit()
   conn.close()
@@ -701,20 +692,38 @@ with tabs[2]:
           "Settlement Method Used *",
           ["Cash App", "Zelle", "Venmo", "Cash POS (In-Person)"]
       )
+      
+      gc_payment_confirmed = st.checkbox(
+          "✅ I confirm that payment has been sent/collected via the selected method."
+      )
+      
       gc_submit = st.form_submit_button("Generate Gift Card Code")
 
       if gc_submit:
         if not (gc_purchaser and gc_recipient):
           st.error("Please fill in both your name and recipient's details.")
+        elif not gc_payment_confirmed:
+          st.error("⚠️ You must confirm that payment has been sent before generating a code.")
         else:
           random_str = "".join(
               random.choices(string.ascii_uppercase + string.digits, k=6)
           )
           gc_code = f"TF-GC-{random_str}"
-          create_gift_card(
-              gc_code, gc_value, f"{gc_purchaser} [Paid: {gc_payment_method}]", gc_recipient
+          
+          conn = sqlite3.connect(DB_FILE)
+          c = conn.cursor()
+          created_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+          c.execute(
+              """
+                INSERT OR REPLACE INTO gift_cards (code, initial_value, current_balance, purchaser_name, recipient_email, status, created_date, payment_method)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+              (gc_code, gc_value, gc_value, gc_purchaser, gc_recipient, "Pending Verification", created_date, gc_payment_method),
           )
-          st.success(f"🎉 Gift Card Created Successfully!")
+          conn.commit()
+          conn.close()
+
+          st.success(f"🎉 Gift Card Created (Pending Verification)!")
           st.info(f"**Gift Card Code:** `{gc_code}` | **Value:** ${gc_value:.2f} | **Via:** {gc_payment_method}")
 
   with gc_tab2:
@@ -732,7 +741,7 @@ with tabs[2]:
           balance = card_data[2]
           status = card_data[5]
           if status != "Active" or balance <= 0:
-            st.warning("This gift card has a zero balance or is inactive.")
+            st.warning("⚠️ This gift card is either pending admin verification, has a zero balance, or is inactive.")
           else:
             st.session_state.applied_gift_card = entered_code.upper()
             st.session_state.gift_card_discount = balance
@@ -964,6 +973,35 @@ with tabs[5]:
 
   if admin_pwd == "admin123":
     st.success("Staff Authentication Verified")
+
+    st.subheader("🎁 Gift Card Management & Verification")
+    conn_gc_admin = sqlite3.connect(DB_FILE)
+    gc_df = pd.read_sql_query("SELECT * FROM gift_cards ORDER BY created_date DESC", conn_gc_admin)
+    conn_gc_admin.close()
+
+    if gc_df.empty:
+      st.info("No gift cards generated yet.")
+    else:
+      st.dataframe(gc_df, use_container_width=True)
+
+      gc_col1, gc_col2, gc_col3 = st.columns([2, 2, 1])
+      with gc_col1:
+        target_gc_code = st.selectbox("Select Gift Card Code to Update", gc_df["code"].tolist())
+      with gc_col2:
+        new_gc_status = st.selectbox("Set Gift Card Status", ["Active", "Pending Verification", "Redeemed", "Disabled"])
+      with gc_col3:
+        st.write("")
+        st.write("")
+        if st.button("Update GC Status"):
+          conn_up = sqlite3.connect(DB_FILE)
+          c_up = conn_up.cursor()
+          c_up.execute("UPDATE gift_cards SET status = ? WHERE code = ?", (new_gc_status, target_gc_code))
+          conn_up.commit()
+          conn_up.close()
+          st.success(f"Gift card {target_gc_code} status updated to {new_gc_status}!")
+          st.rerun()
+
+    st.markdown("---")
 
     st.subheader("📦 Inventory Tracking & Restocking Tool")
     st.caption(
