@@ -529,6 +529,12 @@ st.info(
     " exclusive **Home Scents** collection!"
 )
 
+st.info(
+    "📦 **Shipping Notice:** All orders are processed and shipped out within"
+    " **3–5 business days** after payment verification. Thank you for your"
+    " patience and support!"
+)
+
 with st.expander("ℹ️ Legal, Brand & Allergy Notices"):
   st.write(f"**Trademark Notice:** {DISCLAIMER_TEXT}")
   st.write("---")
@@ -1264,7 +1270,7 @@ with tabs[6]:
             "Set New Processing Status",
             [
                 "Pending Payment",
-                "Payment Sent / Persistent Verification",
+                "Payment Sent / Pending Verification",
                 "Paid / In Production",
                 "Fulfilled / Shipped",
                 "Cancelled",
