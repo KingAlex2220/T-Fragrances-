@@ -94,6 +94,19 @@ def init_db():
   if "payment_method" not in existing_gc_cols:
     c.execute("ALTER TABLE gift_cards ADD COLUMN payment_method TEXT")
 
+  # Table for customer reviews and ratings
+  c.execute("""
+        CREATE TABLE IF NOT EXISTS reviews (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            review_date TEXT,
+            customer_name TEXT,
+            rating INTEGER,
+            item_id TEXT,
+            review_text TEXT,
+            is_approved INTEGER DEFAULT 1
+        )
+    """)
+
   conn.commit()
   conn.close()
 
@@ -335,6 +348,37 @@ def get_gift_card(code):
   return row
 
 
+def save_review(customer_name, rating, item_id, review_text):
+  conn = sqlite3.connect(DB_FILE)
+  c = conn.cursor()
+  review_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+  c.execute(
+      """
+        INSERT INTO reviews (review_date, customer_name, rating, item_id, review_text, is_approved)
+        VALUES (?, ?, ?, ?, ?, 1)
+    """,
+      (review_date, customer_name, rating, item_id, review_text),
+  )
+  conn.commit()
+  conn.close()
+
+
+def get_approved_reviews(item_id=None):
+  conn = sqlite3.connect(DB_FILE)
+  if item_id and item_id != "All":
+    df = pd.read_sql_query(
+        "SELECT * FROM reviews WHERE is_approved = 1 AND item_id = ? ORDER BY id DESC",
+        conn,
+        params=(item_id,),
+    )
+  else:
+    df = pd.read_sql_query(
+        "SELECT * FROM reviews WHERE is_approved = 1 ORDER BY id DESC", conn
+    )
+  conn.close()
+  return df
+
+
 # ==========================================
 # SESSION STATE & CART
 # ==========================================
@@ -362,20 +406,18 @@ PARTNER_MAPPING = {
     "jameka": "Jameka Hatton",
     "ray": "Ira Ray Thompson",
     "eq": "Eriq Dior",
-    
-    
 }
 
 query_params = st.query_params
 active_referral = query_params.get("ref", "").strip().lower()
 
 if active_referral in PARTNER_MAPPING:
-    st.session_state["active_ref"] = PARTNER_MAPPING[active_referral]
+  st.session_state["active_ref"] = PARTNER_MAPPING[active_referral]
 elif active_referral:
-    st.session_state["active_ref"] = active_referral
+  st.session_state["active_ref"] = active_referral
 else:
-    if "active_ref" not in st.session_state:
-        st.session_state["active_ref"] = ""
+  if "active_ref" not in st.session_state:
+    st.session_state["active_ref"] = ""
 
 current_ref_tag = st.session_state.get("active_ref", "")
 
@@ -526,6 +568,7 @@ tabs = st.tabs([
     "✨ Signature Blends",
     "📲 QR Code Request Portal",
     "🎁 Gift Cards",
+    "⭐ Reviews & Testimonials",
     "🛒 Checkout & Invoice",
     "🔍 Customer Order Lookup",
     "🔒 Master Admin & Inventory",
@@ -702,26 +745,30 @@ with tabs[2]:
       )
       gc_payment_method = st.selectbox(
           "Settlement Method Used *",
-          ["Cash App", "Zelle", "Venmo", "Cash POS (In-Person)"]
+          ["Cash App", "Zelle", "Venmo", "Cash POS (In-Person)"],
       )
-      
+
       gc_payment_confirmed = st.checkbox(
-          "✅ I confirm that payment has been sent/collected via the selected method."
+          "✅ I confirm that payment has been sent/collected via the selected"
+          " method."
       )
-      
+
       gc_submit = st.form_submit_button("Generate Gift Card Code")
 
       if gc_submit:
         if not (gc_purchaser and gc_recipient):
           st.error("Please fill in both your name and recipient's details.")
         elif not gc_payment_confirmed:
-          st.error("⚠️ You must confirm that payment has been sent before generating a code.")
+          st.error(
+              "⚠️ You must confirm that payment has been sent before generating"
+              " a code."
+          )
         else:
           random_str = "".join(
               random.choices(string.ascii_uppercase + string.digits, k=6)
           )
           gc_code = f"TF-GC-{random_str}"
-          
+
           conn = sqlite3.connect(DB_FILE)
           c = conn.cursor()
           created_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -730,13 +777,25 @@ with tabs[2]:
                 INSERT OR REPLACE INTO gift_cards (code, initial_value, current_balance, purchaser_name, recipient_email, status, created_date, payment_method)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """,
-              (gc_code, gc_value, gc_value, gc_purchaser, gc_recipient, "Pending Verification", created_date, gc_payment_method),
+              (
+                  gc_code,
+                  gc_value,
+                  gc_value,
+                  gc_purchaser,
+                  gc_recipient,
+                  "Pending Verification",
+                  created_date,
+                  gc_payment_method,
+              ),
           )
           conn.commit()
           conn.close()
 
-          st.success(f"🎉 Gift Card Created (Pending Verification)!")
-          st.info(f"**Gift Card Code:** `{gc_code}` | **Value:** ${gc_value:.2f} | **Via:** {gc_payment_method}")
+          st.success("🎉 Gift Card Created (Pending Verification)!")
+          st.info(
+              f"**Gift Card Code:** `{gc_code}` | **Value:** ${gc_value:.2f} |"
+              f" **Via:** {gc_payment_method}"
+          )
 
   with gc_tab2:
     with st.form("redeem_gc_form"):
@@ -753,7 +812,10 @@ with tabs[2]:
           balance = card_data[2]
           status = card_data[5]
           if status != "Active" or balance <= 0:
-            st.warning("⚠️ This gift card is either pending admin verification, has a zero balance, or is inactive.")
+            st.warning(
+                "⚠️ This gift card is either pending admin verification, has a"
+                " zero balance, or is inactive."
+            )
           else:
             st.session_state.applied_gift_card = entered_code.upper()
             st.session_state.gift_card_discount = balance
@@ -763,9 +825,81 @@ with tabs[2]:
             st.rerun()
 
 # ------------------------------------------
-# TAB 4: CHECKOUT & INVOICE GENERATOR
+# TAB 4: REVIEWS & TESTIMONIALS
 # ------------------------------------------
 with tabs[3]:
+  st.header("⭐ Customer Reviews & Testimonials")
+  st.markdown(
+      "Read what our community has to say about our luxury fragrance"
+      " impressions, or leave your own review below!"
+  )
+
+  rev_sub_tab1, rev_sub_tab2 = st.tabs(["Browse Reviews", "Leave a Review"])
+
+  with rev_sub_tab1:
+    catalog_options = ["All"] + [item["name"] for item in FRAGRANCE_CATALOG]
+    filter_item_name = st.selectbox(
+        "Filter Reviews by Product Blend", catalog_options
+    )
+
+    selected_item_id_for_review = "All"
+    if filter_item_name != "All":
+      selected_item_id_for_review = next(
+          item["id"] for item in FRAGRANCE_CATALOG if item["name"] == filter_item_name
+      )
+
+    reviews_df = get_approved_reviews(selected_item_id_for_review)
+
+    if reviews_df.empty:
+      st.info(
+          "No reviews found for this selection yet. Be the first to leave one!"
+      )
+    else:
+      avg_rating = reviews_df["rating"].mean()
+      st.metric(
+          "Average Community Rating",
+          f"{avg_rating:.1f} / 5.0 ⭐",
+          f"{len(reviews_df)} total review(s)",
+      )
+      st.markdown("---")
+
+      for _, row in reviews_df.iterrows():
+        stars = "⭐" * int(row["rating"])
+        match_blend = next(
+            (item["name"] for item in FRAGRANCE_CATALOG if item["id"] == row["item_id"]),
+            "General Store Review",
+        )
+        with st.container(border=True):
+          st.markdown(f"**{row['customer_name']}** — {stars}")
+          st.caption(f"Product: {match_blend} | Date: {row['review_date']}")
+          st.write(f'"{row["review_text"]}"')
+
+  with rev_sub_tab2:
+    with st.form("leave_review_form"):
+      st.markdown("### Share Your Experience")
+      rev_name = st.text_input("Your Name *")
+      rev_rating = st.slider("Rating (1 to 5 Stars)", min_value=1, max_value=5, value=5)
+      
+      blend_choices = {item["name"]: item["id"] for item in FRAGRANCE_CATALOG}
+      blend_choices["General Store / QR Request Experience"] = "general"
+      
+      chosen_blend_name = st.selectbox("Select Fragrance / Product", list(blend_choices.keys()))
+      rev_text = st.text_area("Your Review / Testimonial *")
+      
+      submit_review = st.form_submit_button("Submit Review")
+
+      if submit_review:
+        if not (rev_name and rev_text):
+          st.error("Please provide your name and your review message.")
+        else:
+          target_blend_id = blend_choices[chosen_blend_name]
+          save_review(rev_name, rev_rating, target_blend_id, rev_text)
+          st.success("🎉 Thank you! Your review has been successfully submitted.")
+
+# ------------------------------------------
+# TAB 5: CHECKOUT & INVOICE GENERATOR
+# ------------------------------------------
+with tabs[4]:
   st.header("🧾 Checkout & Invoice Generator")
 
   if not st.session_state.cart:
@@ -955,9 +1089,9 @@ with tabs[3]:
           st.session_state.gift_card_discount = 0.0
 
 # ------------------------------------------
-# TAB 5: CUSTOMER ORDER LOOKUP
+# TAB 6: CUSTOMER ORDER LOOKUP
 # ------------------------------------------
-with tabs[4]:
+with tabs[5]:
   st.header("🔍 Customer Order Lookup Portal")
   st.write("Track active order status, preorders, and fulfillment updates.")
 
@@ -985,9 +1119,9 @@ with tabs[4]:
             st.warning("🔥 Priority Preorder Queue Active")
 
 # ------------------------------------------
-# TAB 6: MASTER ADMIN & RESTOCKING TOOL
+# TAB 7: MASTER ADMIN & RESTOCKING TOOL
 # ------------------------------------------
-with tabs[5]:
+with tabs[6]:
   st.header("🔒 Master Admin Database & Restocking Management")
   admin_pwd = st.text_input("Enter Admin Security Password", type="password")
 
@@ -1130,7 +1264,7 @@ with tabs[5]:
             "Set New Processing Status",
             [
                 "Pending Payment",
-                "Payment Sent / Pending Verification",
+                "Payment Sent / Persistent Verification",
                 "Paid / In Production",
                 "Fulfilled / Shipped",
                 "Cancelled",
