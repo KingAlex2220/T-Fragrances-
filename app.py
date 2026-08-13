@@ -1,8 +1,6 @@
 from datetime import datetime
 import os
-import random
 import sqlite3
-import string
 import pandas as pd
 import streamlit as st
 
@@ -370,13 +368,7 @@ def add_to_cart(item_id):
 # ==========================================
 query_params = st.query_params
 active_referral = query_params.get("ref", "")
-if active_referral:
-  st.session_state["active_ref"] = active_referral.lower().strip()
-else:
-  if "active_ref" not in st.session_state:
-    st.session_state["active_ref"] = ""
 
-current_ref_tag = st.session_state.get("active_ref", "")
 
 # ==========================================
 # SIDEBAR NAVIGATION
@@ -384,8 +376,8 @@ current_ref_tag = st.session_state.get("active_ref", "")
 st.sidebar.title("✨ T Fragrances")
 st.sidebar.caption("50ml Clear Bottle Luxury Impressions")
 
-if current_ref_tag:
-  st.sidebar.success(f"🔗 Partner Tracking Ref: **{current_ref_tag}**")
+if active_referral:
+  st.sidebar.success(f"🔗 Partner Tracking Ref: **{active_referral}**")
 
 search_term = st.sidebar.text_input("🔍 Search signature catalog...", "").lower()
 selected_gender = st.sidebar.radio("Collection Filter", ["All", "Men", "Women"])
@@ -668,7 +660,7 @@ with tabs[1]:
                 + (qr_notes if qr_notes else "")
             ),
             cart_items={},
-            referral_code=current_ref_tag,
+            referral_code=active_referral,
         )
 
         st.success(
@@ -744,21 +736,30 @@ with tabs[3]:
       gc_value = st.number_input(
           "Gift Card Amount ($)", min_value=10.0, value=45.0, step=5.0
       )
-      gc_submit = st.form_submit_button("Generate Gift Card Code")
+      gc_submit = st.form_submit_button("Generate Gift Card")
 
       if gc_submit:
         if not (gc_purchaser and gc_recipient):
           st.error("Please fill in both your name and the recipient's details.")
         else:
-          random_str = "".join(
-              random.choices(string.ascii_uppercase + string.digits, k=6)
+          # generate code like TF-GC-XXXX
+          import random
+
+          rand_suffix = "".join(
+              random.choices("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789", k=6)
           )
-          gc_code = f"TF-GC-{random_str}"
+          gc_code = f"TF-GC-{rand_suffix}"
           create_gift_card(
               gc_code, gc_value, gc_purchaser, gc_recipient
           )
-          st.success(f"🎉 Gift Card Created Successfully!")
-          st.info(f"**Gift Card Code:** `{gc_code}` | **Value:** ${gc_value:.2f}")
+          st.success(
+              f"🎉 Gift Card successfully created! Code: **{gc_code}** (Value:"
+              f" ${gc_value:.2f})"
+          )
+          st.info(
+              "Save this code and send it to your recipient. They can apply it"
+              " directly during checkout."
+          )
 
   with gc_tab2:
     with st.form("redeem_gc_form"):
@@ -768,19 +769,25 @@ with tabs[3]:
       redeem_submit = st.form_submit_button("Apply Gift Card to Order")
 
       if redeem_submit:
-        card_data = get_gift_card(entered_code.upper())
+        card_data = get_gift_card(entered_code)
         if not card_data:
-          st.error("Invalid gift card code.")
+          st.error(
+              "Invalid gift card code. Please check the code and try again."
+          )
         else:
+          # card schema: code, initial_value, current_balance, purchaser_name, recipient_email, status, created_date
           balance = card_data[2]
           status = card_data[5]
           if status != "Active" or balance <= 0:
-            st.warning("This gift card has a zero balance or is inactive.")
+            st.error(
+                "This gift card has already been fully redeemed or is inactive."
+            )
           else:
-            st.session_state.applied_gift_card = entered_code.upper()
+            st.session_state.applied_gift_card = entered_code
             st.session_state.gift_card_discount = balance
             st.success(
-                f"✅ Gift card applied! Available Balance: ${balance:.2f}"
+                f"✅ Gift card applied! ${balance:.2f} credit added to your"
+                " order."
             )
             st.rerun()
 
@@ -841,8 +848,8 @@ with tabs[4]:
         st.markdown("100% Oil-Based Luxury Impressions")
         st.markdown(f"**Invoice Date:** {datetime.now().strftime('%Y-%m-%d')}")
         st.markdown(f"**Master Cycle:** {get_current_30_day_cycle()}")
-        if current_ref_tag:
-          st.markdown(f"**Partner Referral:** {current_ref_tag}")
+        if active_referral:
+          st.markdown(f"**Partner Referral:** {active_referral}")
       with inv_col2:
         st.markdown(f"**Subtotal (Raw):** ${raw_subtotal:.2f}")
         if discount > 0:
@@ -941,9 +948,10 @@ with tabs[4]:
               is_priority,
               notes,
               st.session_state.cart,
-              referral_code=current_ref_tag,
+              referral_code=active_referral,
           )
 
+          # If gift card was used, mark it as spent/depleted in DB
           if st.session_state.applied_gift_card:
             conn_gc = sqlite3.connect(DB_FILE)
             c_gc = conn_gc.cursor()
@@ -1056,7 +1064,7 @@ with tabs[6]:
 
     st.markdown("---")
 
-    st.subheader("🗓️ Master Order Database & Partner Attribution")
+    st.subheader("🗓️ Master Order Database & Priority Queue")
 
     orders_df = get_all_orders()
 
