@@ -18,9 +18,7 @@ st.set_page_config(
 # DATABASE SETUP & AUTO-MIGRATION
 # ==========================================
 DB_FILE = "t_fragrances.db"
-DEFAULT_STOCK_PER_ITEM = (
-    5  # Default 5 bottles per signature blend/catalog item
-)
+DEFAULT_STOCK_PER_ITEM = 5
 
 
 def init_db():
@@ -138,7 +136,7 @@ FRAGRANCE_CATALOG = [
             "Signature Blend No. 2 — Inspired by Good Girl profile: Tuberose,"
             " roasted tonka bean, and cocoa."
         ),
-        "image_url": None,
+        "image_url": "good_girl_blend.png",
     },
     {
         "id": "sig_w3",
@@ -150,7 +148,7 @@ FRAGRANCE_CATALOG = [
             "Signature Blend No. 3 — Inspired by Baccarat Rouge 540 profile:"
             " Jasmine, saffron, cedarwood, and ambergris."
         ),
-        "image_url": None,
+        "image_url": "rouge_540_blend.png",
     },
 ]
 
@@ -408,7 +406,6 @@ st.sidebar.subheader(f"Total: ${final_subtotal:.2f}")
 # ==========================================
 st.title("T Fragrances POS & Master Portal")
 
-# Notice banner directing users to QR Portal if they want other scents or home scents
 st.info(
     "💡 **Looking for something else?** If you don't want our signature blends,"
     " scan the **QR code** in the sidebar to access our full catalog portal,"
@@ -589,7 +586,7 @@ with tabs[1]:
             discount=qr_discount,
             total=qr_final_total,
             payment_method=qr_payment_method,
-            is_priority=1,  # QR requests default to priority preorder handling
+            is_priority=1,
             notes=(
                 "QR Code Custom Request Order (Scents / Home Scents)."
                 f" Desired Items: {qr_item_requests}. "
