@@ -855,6 +855,12 @@ with tabs[3]:
         phone = st.text_input("Phone Number *")
         address = st.text_input("Shipping Address *")
 
+      # Manual referral override option if they weren't tracked via URL link
+      manual_ref = st.text_input(
+          "Partner / Affiliate Referral Tag (Optional if referred by a partner)",
+          value=current_ref_tag,
+      )
+
       payment_method = st.radio(
           "Select Settlement Channel Used",
           ["Cash App", "Zelle", "Venmo", "Cash POS (In-Person)"],
@@ -893,6 +899,8 @@ with tabs[3]:
           )
         else:
           items_str = ", ".join(summary_list)
+          final_tag_to_save = manual_ref.strip().lower() if manual_ref else current_ref_tag
+
           save_order_to_db(
               name,
               email,
@@ -907,7 +915,7 @@ with tabs[3]:
               is_priority,
               notes,
               st.session_state.cart,
-              referral_code=current_ref_tag,
+              referral_code=final_tag_to_save,
           )
 
           if st.session_state.applied_gift_card:
@@ -973,6 +981,27 @@ with tabs[5]:
 
   if admin_pwd == "admin123":
     st.success("Staff Authentication Verified")
+
+    # --- PARTNERSHIP & AFFILIATE PERFORMANCE TRACKER ---
+    st.subheader("🤝 Partner & Affiliate Performance Tracker")
+    st.caption("Review sales volume, orders, and attribution tracked via unique referral links (e.g. `?ref=name`).")
+    
+    conn_aff = sqlite3.connect(DB_FILE)
+    aff_df = pd.read_sql_query("SELECT referral_code, final_total, total_qty FROM orders WHERE referral_code IS NOT NULL AND referral_code != ''", conn_aff)
+    conn_aff.close()
+
+    if aff_df.empty:
+      st.info("No partner-attributed orders recorded yet. Share links using `?ref=partnername`.")
+    else:
+      partner_summary = aff_df.groupby("referral_code").agg(
+          Total_Orders=("final_total", "count"),
+          Total_Bottles=("total_qty", "sum"),
+          Total_Revenue=("final_total", "sum")
+      ).reset_index()
+      partner_summary.columns = ["Partner Tag", "Orders Generated", "Bottles Sold", "Gross Revenue ($)"]
+      st.dataframe(partner_summary, use_container_width=True)
+
+    st.markdown("---")
 
     st.subheader("🎁 Gift Card Management & Verification")
     conn_gc_admin = sqlite3.connect(DB_FILE)
