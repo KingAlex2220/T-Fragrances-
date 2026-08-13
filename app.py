@@ -466,7 +466,7 @@ st.sidebar.subheader(f"Total: ${final_subtotal:.2f}")
 # ==========================================
 # MAIN INTERFACE
 # ==========================================
-st.title("T Fragrances POS & Master Portal")
+st.title("T Fragrances")
 
 st.info(
     "💡 **Looking for something else?**,"
@@ -979,7 +979,7 @@ with tabs[5]:
   st.header("🔒 Master Admin Database & Restocking Management")
   admin_pwd = st.text_input("Enter Admin Security Password", type="password")
 
-  if admin_pwd == "admin123":
+  if admin_pwd == "Saf9uard-tf80":
     st.success("Staff Authentication Verified")
 
     # --- PARTNERSHIP & AFFILIATE PERFORMANCE TRACKER ---
