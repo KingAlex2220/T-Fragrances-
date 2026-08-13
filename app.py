@@ -407,7 +407,7 @@ st.sidebar.subheader(f"Total: ${final_subtotal:.2f}")
 st.title("T Fragrances POS & Master Portal")
 
 st.info(
-    "💡 **Looking for something else?** If you don't want our signature blends,"
+    "💡 **Looking for something else?** ,"
     " scan the **QR code** in the sidebar to access our full catalog portal,"
     " where you can request any other scent impressions and explore our"
     " exclusive **Home Scents** collection!"
