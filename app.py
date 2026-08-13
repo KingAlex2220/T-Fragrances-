@@ -125,7 +125,7 @@ FRAGRANCE_CATALOG = [
             "Signature Blend No. 4 — Inspired by Aventus profile: Smoky"
             " pineapple, birchwood, and oakmoss."
         ),
-        "image_url": None,
+        "image_url": "aventus_blend.png",
     },
     # --- WOMEN'S SIGNATURE BLENDS (No. 2 & No. 3 grouped together) ---
     {
@@ -259,7 +259,7 @@ def search_orders(query, is_admin=False):
   else:
     df = pd.read_sql_query(
         "SELECT id, order_date, customer_name, items_summary, total_qty,"
-        " final_total, status, is_priority, cycle_id WHERE"
+        " final_total, status, is_priority, cycle_id FROM orders WHERE"
         " customer_email LIKE ? OR customer_phone LIKE ? ORDER BY id DESC",
         conn,
         params=(q, q),
