@@ -362,7 +362,7 @@ with pay_tab2:
 
 with pay_tab3:
   st.markdown("**Alexander Thompson**")
-  st.markdown("`***-***-4196`")
+  st.markdown("`8632364196`")
   if os.path.exists("zelle_qr.png"):
     st.image("zelle_qr.png", use_container_width=True)
   else:
@@ -656,9 +656,7 @@ with tabs[2]:
         st.markdown(f"**Invoice Date:** {datetime.now().strftime('%Y-%m-%d')}")
         st.markdown(f"**Master Cycle:** {get_current_30_day_cycle()}")
       with inv_col2:
-        st.markdown(
-            f"**Subtotal (Raw):** ${raw_subtotal:.2f}"
-        )
+        st.markdown(f"**Subtotal (Raw):** ${raw_subtotal:.2f}")
         if discount > 0:
           st.markdown(
               f"**Discount ({discount_label}):** -${raw_subtotal * discount:.2f}"
@@ -684,7 +682,7 @@ with tabs[2]:
       with pay_info_col3:
         st.markdown("**Zelle**")
         st.markdown("Name: **Alexander Thompson**")
-        st.markdown("Phone/ID: `***-***-4196`")
+        st.markdown("Phone/ID: `8632364196`")
 
     st.markdown("---")
     st.subheader("Customer Shipping & Payment Submission Form")
@@ -710,12 +708,12 @@ with tabs[2]:
 
       st.markdown("---")
       st.caption("⚠️ **Safety & Payment Confirmation Checkboxes**")
-      
+
       payment_confirmed = st.checkbox(
           "✅ I confirm that I have sent the exact payment total of "
           f"${final_subtotal:.2f} to the designated payment handle above."
       )
-      
+
       allergy_ack = st.checkbox(
           "I acknowledge that I have read the Allergy & Skin Sensitivity"
           " Disclaimer and agree to perform a skin patch test prior to use."
@@ -751,7 +749,10 @@ with tabs[2]:
               notes,
               st.session_state.cart,
           )
-          st.success(f"Order and payment verification successfully submitted for {name}!")
+          st.success(
+              f"Order and payment verification successfully submitted for"
+              f" {name}!"
+          )
           if is_priority:
             st.warning(
                 "⚡ Priority Preorder activated. Production scheduled on"
