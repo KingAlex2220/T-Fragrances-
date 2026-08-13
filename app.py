@@ -205,7 +205,7 @@ def save_order_to_db(
   c = conn.cursor()
   order_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
   cycle_id = get_current_30_day_cycle()
-  status = "QR Request / Priority Preorder" if is_priority else "Pending Payment"
+  status = "Payment Sent / Pending Verification" if is_priority else "Pending"
 
   c.execute(
       """
@@ -451,7 +451,7 @@ if priority_only:
 tabs = st.tabs([
     "✨ Signature Blends",
     "📲 QR Code Request Portal",
-    "🛒 Checkout",
+    "🛒 Checkout & Invoice",
     "🔍 Customer Order Lookup",
     "🔒 Master Admin & Inventory",
 ])
@@ -606,10 +606,10 @@ with tabs[1]:
         )
 
 # ------------------------------------------
-# TAB 3: CHECKOUT
+# TAB 3: CHECKOUT & INVOICE GENERATOR
 # ------------------------------------------
 with tabs[2]:
-  st.header("Order Settlement")
+  st.header("🧾 Checkout & Invoice Generator")
 
   if not st.session_state.cart:
     st.info("Your bag is currently empty.")
@@ -638,14 +638,56 @@ with tabs[2]:
           f"**Applied Discount Tier:**"
           f" {discount_label if discount > 0 else 'None'}"
       )
-      st.markdown(f"### Final Subtotal: ${final_subtotal:.2f}")
     with c2:
       if st.button("Clear Bag"):
         st.session_state.cart = {}
         st.rerun()
 
     st.markdown("---")
-    st.subheader("Customer Shipping & Contact Details")
+
+    # --- LIVE INVOICE DISPLAY BOX ---
+    st.markdown("### 📄 Generated Customer Invoice")
+    invoice_container = st.container(border=True)
+    with invoice_container:
+      inv_col1, inv_col2 = st.columns(2)
+      with inv_col1:
+        st.markdown("**T Fragrances**")
+        st.markdown("100% Oil-Based Luxury Impressions")
+        st.markdown(f"**Invoice Date:** {datetime.now().strftime('%Y-%m-%d')}")
+        st.markdown(f"**Master Cycle:** {get_current_30_day_cycle()}")
+      with inv_col2:
+        st.markdown(
+            f"**Subtotal (Raw):** ${raw_subtotal:.2f}"
+        )
+        if discount > 0:
+          st.markdown(
+              f"**Discount ({discount_label}):** -${raw_subtotal * discount:.2f}"
+          )
+        st.markdown(f"### **Total Due: ${final_subtotal:.2f}**")
+
+      st.markdown("---")
+      st.markdown("### 💳 Designated Payment Destination Info")
+      st.write(
+          "Please send your exact invoice total to one of the following"
+          " authorized channels before confirming your order:"
+      )
+
+      pay_info_col1, pay_info_col2, pay_info_col3 = st.columns(3)
+      with pay_info_col1:
+        st.markdown("**Cash App**")
+        st.markdown("Name: **Jameka Howell**")
+        st.markdown("Handle: `$JaMekaHowell`")
+      with pay_info_col2:
+        st.markdown("**Venmo**")
+        st.markdown("Name: **Jameka Hatton**")
+        st.markdown("Handle: `@Jameka-Hatton`")
+      with pay_info_col3:
+        st.markdown("**Zelle**")
+        st.markdown("Name: **Alexander Thompson**")
+        st.markdown("Phone/ID: `***-***-4196`")
+
+    st.markdown("---")
+    st.subheader("Customer Shipping & Payment Submission Form")
 
     with st.form("checkout_form"):
       col_a, col_b = st.columns(2)
@@ -657,7 +699,7 @@ with tabs[2]:
         address = st.text_input("Shipping Address *")
 
       payment_method = st.radio(
-          "Settlement Channel",
+          "Select Settlement Channel Used",
           ["Cash App", "Zelle", "Venmo", "Cash POS (In-Person)"],
       )
       is_priority = st.checkbox(
@@ -666,15 +708,27 @@ with tabs[2]:
       )
       notes = st.text_area("Special Delivery Instructions / Scent Preferences")
 
-      st.caption("⚠️ **Safety Acknowledgement**")
+      st.markdown("---")
+      st.caption("⚠️ **Safety & Payment Confirmation Checkboxes**")
+      
+      payment_confirmed = st.checkbox(
+          "✅ I confirm that I have sent the exact payment total of "
+          f"${final_subtotal:.2f} to the designated payment handle above."
+      )
+      
       allergy_ack = st.checkbox(
           "I acknowledge that I have read the Allergy & Skin Sensitivity"
           " Disclaimer and agree to perform a skin patch test prior to use."
       )
 
-      if st.form_submit_button("Place Order"):
+      if st.form_submit_button("Submit Order"):
         if not (name and email and phone and address):
           st.error("Please fill in all required customer fields.")
+        elif not payment_confirmed:
+          st.error(
+              "⚠️ You must check the confirmation box verifying that you have"
+              " sent the payment before submitting your order."
+          )
         elif not allergy_ack:
           st.error(
               "Please acknowledge the Safety & Allergy Disclaimer prior to"
@@ -697,16 +751,12 @@ with tabs[2]:
               notes,
               st.session_state.cart,
           )
-          st.success(f"Order successfully placed for {name}!")
+          st.success(f"Order and payment verification successfully submitted for {name}!")
           if is_priority:
             st.warning(
                 "⚡ Priority Preorder activated. Production scheduled on"
                 " fast-track timeline."
             )
-          st.info(
-              f"Send total settlement of **${final_subtotal:.2f}** via"
-              f" **{payment_method}**."
-          )
           st.session_state.cart = {}
 
 # ------------------------------------------
@@ -833,7 +883,7 @@ with tabs[4]:
             "Set New Processing Status",
             [
                 "Pending Payment",
-                "Priority Preorder Processing",
+                "Payment Sent / Pending Verification",
                 "Paid / In Production",
                 "Fulfilled / Shipped",
                 "Cancelled",
