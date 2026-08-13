@@ -128,7 +128,7 @@ FRAGRANCE_CATALOG = [
         "name": "No 1 — Savage Spirit Blend",
         "gender": "Men",
         "category": "Signature Blend",
-        "price": 30.0,
+        "price": 45.0,
         "notes": (
             "Signature Blend No. 1 — Inspired by Sauvage profile: Crisp"
             " bergamot, pepper, and rich ambroxan."
@@ -141,7 +141,7 @@ FRAGRANCE_CATALOG = [
         "name": "No 4 — Monarch Creed (Aventus Blend)",
         "gender": "Men",
         "category": "Signature Blend",
-        "price": 30.0,
+        "price": 45.0,
         "notes": (
             "Signature Blend No. 4 — Inspired by Aventus profile: Smoky"
             " pineapple, birchwood, and oakmoss."
@@ -154,7 +154,7 @@ FRAGRANCE_CATALOG = [
         "name": "No 2 — Good Girl Blend",
         "gender": "Women",
         "category": "Signature Blend",
-        "price": 30.0,
+        "price": 45.0,
         "notes": (
             "Signature Blend No. 2 — Inspired by Good Girl profile: Tuberose,"
             " roasted tonka bean, and cocoa."
@@ -167,7 +167,7 @@ FRAGRANCE_CATALOG = [
         "name": "No 3 — Crystal Rouge 540 Blend",
         "gender": "Women",
         "category": "Signature Blend",
-        "price": 30.0,
+        "price": 45.0,
         "notes": (
             "Signature Blend No. 3 — Inspired by Baccarat Rouge 540 profile:"
             " Jasmine, saffron, cedarwood, and ambergris."
@@ -525,7 +525,7 @@ tabs = st.tabs([
 with tabs[0]:
   st.header("T Fragrances Signature Blends")
   st.caption(
-      "Featuring our exclusive signature 4 blends ($30.00 each). Men's blends"
+      "Featuring our exclusive signature 4 blends ($45.00 each). Men's blends"
       " (No. 1 & No. 4) and Women's blends (No. 2 & No. 3)."
   )
 
@@ -582,7 +582,7 @@ with tabs[1]:
   st.info(
       "✨ **Notice:** You are ordering 100% oil-based designer style"
       " impressions or **Home Scents** of the products you see scanned from the"
-      " QR code ($30.00 per bottle/unit)."
+      " QR code ($45.00 per bottle/unit)."
   )
 
   with st.form("qr_request_line_form"):
@@ -626,7 +626,7 @@ with tabs[1]:
             " from the QR code."
         )
       else:
-        qr_subtotal = qr_total_qty * 30.0
+        qr_subtotal = qr_total_qty * 45.0
 
         qr_discount = 0.0
         if qr_subtotal >= 100.0:
@@ -686,7 +686,7 @@ with tabs[2]:
       gc_purchaser = st.text_input("Your Name *")
       gc_recipient = st.text_input("Recipient Email or Name *")
       gc_value = st.number_input(
-          "Gift Card Amount ($)", min_value=10.0, value=30.0, step=5.0
+          "Gift Card Amount ($)", min_value=10.0, value=45.0, step=5.0
       )
       gc_payment_method = st.selectbox(
           "Settlement Method Used *",
