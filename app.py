@@ -48,8 +48,7 @@ def init_db():
             status TEXT,
             is_priority INTEGER DEFAULT 0,
             cycle_id TEXT,
-            notes TEXT,
-            referral_code TEXT
+            notes TEXT
         )
     """)
 
@@ -62,8 +61,6 @@ def init_db():
     c.execute("ALTER TABLE orders ADD COLUMN cycle_id TEXT")
   if "notes" not in existing_cols:
     c.execute("ALTER TABLE orders ADD COLUMN notes TEXT")
-  if "referral_code" not in existing_cols:
-    c.execute("ALTER TABLE orders ADD COLUMN referral_code TEXT")
 
   c.execute("""
         CREATE TABLE IF NOT EXISTS inventory (
@@ -71,18 +68,6 @@ def init_db():
             item_name TEXT,
             stock_level INTEGER,
             initial_stock INTEGER
-        )
-    """)
-
-  c.execute("""
-        CREATE TABLE IF NOT EXISTS gift_cards (
-            code TEXT PRIMARY KEY,
-            initial_value REAL,
-            current_balance REAL,
-            purchaser_name TEXT,
-            recipient_email TEXT,
-            status TEXT,
-            created_date TEXT
         )
     """)
 
@@ -126,7 +111,6 @@ FRAGRANCE_CATALOG = [
             "Signature Blend No. 1 — Inspired by Sauvage profile: Crisp"
             " bergamot, pepper, and rich ambroxan."
         ),
-        "profile_type": "fresh-citrus",
         "image_url": "savage_spirit.png",
     },
     {
@@ -139,7 +123,6 @@ FRAGRANCE_CATALOG = [
             "Signature Blend No. 4 — Inspired by Aventus profile: Smoky"
             " pineapple, birchwood, and oakmoss."
         ),
-        "profile_type": "smoky",
         "image_url": "aventus_blend.png",
     },
     # --- WOMEN'S SIGNATURE BLENDS (No. 2 & No. 3 grouped together) ---
@@ -153,7 +136,6 @@ FRAGRANCE_CATALOG = [
             "Signature Blend No. 2 — Inspired by Good Girl profile: Tuberose,"
             " roasted tonka bean, and cocoa."
         ),
-        "profile_type": "sweet-floral",
         "image_url": "good_girl_blend.png",
     },
     {
@@ -166,7 +148,6 @@ FRAGRANCE_CATALOG = [
             "Signature Blend No. 3 — Inspired by Baccarat Rouge 540 profile:"
             " Jasmine, saffron, cedarwood, and ambergris."
         ),
-        "profile_type": "woody",
         "image_url": "rouge_540_blend.png",
     },
 ]
@@ -219,7 +200,6 @@ def save_order_to_db(
     is_priority,
     notes,
     cart_items,
-    referral_code="",
 ):
   conn = sqlite3.connect(DB_FILE)
   c = conn.cursor()
@@ -232,8 +212,8 @@ def save_order_to_db(
         INSERT INTO orders (
             order_date, customer_name, customer_email, customer_phone, 
             shipping_address, items_summary, total_qty, subtotal, 
-            discount_applied, final_total, payment_method, status, is_priority, cycle_id, notes, referral_code
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            discount_applied, final_total, payment_method, status, is_priority, cycle_id, notes
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """,
       (
           order_date,
@@ -251,7 +231,6 @@ def save_order_to_db(
           int(is_priority),
           cycle_id,
           notes,
-          referral_code,
       ),
   )
 
@@ -278,8 +257,8 @@ def search_orders(query, is_admin=False):
   else:
     df = pd.read_sql_query(
         "SELECT id, order_date, customer_name, items_summary, total_qty,"
-        " final_total, status, is_priority, cycle_id, referral_code FROM orders"
-        " WHERE customer_email LIKE ? OR customer_phone LIKE ? ORDER BY id DESC",
+        " final_total, status, is_priority, cycle_id FROM orders WHERE"
+        " customer_email LIKE ? OR customer_phone LIKE ? ORDER BY id DESC",
         conn,
         params=(q, q),
     )
@@ -320,39 +299,11 @@ def update_item_stock(item_id, new_stock):
   conn.close()
 
 
-def create_gift_card(code, value, purchaser, recipient):
-  conn = sqlite3.connect(DB_FILE)
-  c = conn.cursor()
-  created_date = datetime.now().strftime("%Y-%m-%d")
-  c.execute(
-      """
-        INSERT OR REPLACE INTO gift_cards (code, initial_value, current_balance, purchaser_name, recipient_email, status, created_date)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    """,
-      (code, value, value, purchaser, recipient, "Active", created_date),
-  )
-  conn.commit()
-  conn.close()
-
-
-def get_gift_card(code):
-  conn = sqlite3.connect(DB_FILE)
-  c = conn.cursor()
-  c.execute("SELECT * FROM gift_cards WHERE code = ?", (code,))
-  row = c.fetchone()
-  conn.close()
-  return row
-
-
 # ==========================================
 # SESSION STATE & CART
 # ==========================================
 if "cart" not in st.session_state:
   st.session_state.cart = {}
-if "applied_gift_card" not in st.session_state:
-  st.session_state.applied_gift_card = None
-if "gift_card_discount" not in st.session_state:
-  st.session_state.gift_card_discount = 0.0
 
 
 def add_to_cart(item_id):
@@ -364,20 +315,10 @@ def add_to_cart(item_id):
 
 
 # ==========================================
-# URL QUERY PARAMS FOR REFERRAL TRACKING
-# ==========================================
-query_params = st.query_params
-active_referral = query_params.get("ref", "")
-
-
-# ==========================================
 # SIDEBAR NAVIGATION
 # ==========================================
 st.sidebar.title("✨ T Fragrances")
 st.sidebar.caption("50ml Clear Bottle Luxury Impressions")
-
-if active_referral:
-  st.sidebar.success(f"🔗 Partner Tracking Ref: **{active_referral}**")
 
 search_term = st.sidebar.text_input("🔍 Search signature catalog...", "").lower()
 selected_gender = st.sidebar.radio("Collection Filter", ["All", "Men", "Women"])
@@ -452,18 +393,12 @@ elif total_qty == 2:
   discount = 0.10
   discount_label = "10% OFF (2 Items Tier)"
 
-subtotal_after_volume = raw_subtotal * (1 - discount)
-final_subtotal = max(
-    0.0, subtotal_after_volume - st.session_state.gift_card_discount
-)
+final_subtotal = raw_subtotal * (1 - discount)
 
 st.sidebar.write(f"**Items in Bag:** {total_qty}")
 if discount > 0:
-  st.sidebar.write(f"**Volume Discount:** {discount_label}")
-if st.session_state.applied_gift_card:
-  st.sidebar.write(
-      f"**Gift Card Applied:** -${st.session_state.gift_card_discount:.2f}"
-  )
+  st.sidebar.write(f"**Applied Discount:** {discount_label}")
+  st.sidebar.write(f"~~Original: ${raw_subtotal:.2f}~~")
 st.sidebar.subheader(f"Total: ${final_subtotal:.2f}")
 
 # ==========================================
@@ -516,8 +451,6 @@ if priority_only:
 tabs = st.tabs([
     "✨ Signature Blends",
     "📲 QR Code Request Portal",
-    "🧭 Scent Finder Quiz",
-    "🎁 Gift Cards",
     "🛒 Checkout & Invoice",
     "🔍 Customer Order Lookup",
     "🔒 Master Admin & Inventory",
@@ -660,7 +593,6 @@ with tabs[1]:
                 + (qr_notes if qr_notes else "")
             ),
             cart_items={},
-            referral_code=active_referral,
         )
 
         st.success(
@@ -674,127 +606,9 @@ with tabs[1]:
         )
 
 # ------------------------------------------
-# TAB 3: SCENT FINDER QUIZ
+# TAB 3: CHECKOUT & INVOICE GENERATOR
 # ------------------------------------------
 with tabs[2]:
-  st.header("🧭 Interactive Scent Finder Quiz")
-  st.markdown(
-      "Answer 2 quick questions to find your ideal Signature Blend match from"
-      " our collection."
-  )
-
-  with st.form("scent_quiz_form"):
-    q_gender = st.selectbox("1. Who are you shopping for?", ["Men", "Women"])
-    q_profile = st.selectbox(
-        "2. What is your preferred scent mood/profile?",
-        [
-            "Fresh, citrus, & energetic (Savage Style)",
-            "Smoky, bold, & sophisticated (Creed/Aventus Style)",
-            "Sweet, floral, warm gourmand (Good Girl Style)",
-            "Rich woody, sophisticated ambergris (Baccarat Rouge 540 Style)",
-        ],
-    )
-    quiz_submit = st.form_submit_button("Find My Match")
-
-    if quiz_submit:
-      matched_item = None
-      if q_gender == "Men":
-        if "fresh" in q_profile.lower():
-          matched_item = next(x for x in FRAGRANCE_CATALOG if x["id"] == "sig_m1")
-        else:
-          matched_item = next(x for x in FRAGRANCE_CATALOG if x["id"] == "sig_m4")
-      else:
-        if "sweet" in q_profile.lower():
-          matched_item = next(x for x in FRAGRANCE_CATALOG if x["id"] == "sig_w2")
-        else:
-          matched_item = next(x for x in FRAGRANCE_CATALOG if x["id"] == "sig_w3")
-
-      st.success(f"✨ Your Perfect Match: **{matched_item['name']}**!")
-      st.write(f"*{matched_item['notes']}*")
-      st.write(f"**Price:** ${matched_item['price']:.2f}")
-
-      if st.button("Add Recommended Blend to Bag", key="quiz_add_btn"):
-        add_to_cart(matched_item["id"])
-        st.rerun()
-
-# ------------------------------------------
-# TAB 4: GIFT CARDS
-# ------------------------------------------
-with tabs[3]:
-  st.header("🎁 Digital Gift Cards & Store Credit")
-  st.markdown(
-      "Purchase a digital gift card for friends or family, or redeem an active"
-      " gift card code toward your order."
-  )
-
-  gc_tab1, gc_tab2 = st.tabs(["Purchase Gift Card", "Redeem Gift Card Code"])
-
-  with gc_tab1:
-    with st.form("purchase_gc_form"):
-      gc_purchaser = st.text_input("Your Name *")
-      gc_recipient = st.text_input("Recipient Email or Name *")
-      gc_value = st.number_input(
-          "Gift Card Amount ($)", min_value=10.0, value=45.0, step=5.0
-      )
-      gc_submit = st.form_submit_button("Generate Gift Card")
-
-      if gc_submit:
-        if not (gc_purchaser and gc_recipient):
-          st.error("Please fill in both your name and the recipient's details.")
-        else:
-          # generate code like TF-GC-XXXX
-          import random
-
-          rand_suffix = "".join(
-              random.choices("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789", k=6)
-          )
-          gc_code = f"TF-GC-{rand_suffix}"
-          create_gift_card(
-              gc_code, gc_value, gc_purchaser, gc_recipient
-          )
-          st.success(
-              f"🎉 Gift Card successfully created! Code: **{gc_code}** (Value:"
-              f" ${gc_value:.2f})"
-          )
-          st.info(
-              "Save this code and send it to your recipient. They can apply it"
-              " directly during checkout."
-          )
-
-  with gc_tab2:
-    with st.form("redeem_gc_form"):
-      entered_code = st.text_input(
-          "Enter Gift Card Code (e.g., TF-GC-XXXXXX)"
-      ).strip()
-      redeem_submit = st.form_submit_button("Apply Gift Card to Order")
-
-      if redeem_submit:
-        card_data = get_gift_card(entered_code)
-        if not card_data:
-          st.error(
-              "Invalid gift card code. Please check the code and try again."
-          )
-        else:
-          # card schema: code, initial_value, current_balance, purchaser_name, recipient_email, status, created_date
-          balance = card_data[2]
-          status = card_data[5]
-          if status != "Active" or balance <= 0:
-            st.error(
-                "This gift card has already been fully redeemed or is inactive."
-            )
-          else:
-            st.session_state.applied_gift_card = entered_code
-            st.session_state.gift_card_discount = balance
-            st.success(
-                f"✅ Gift card applied! ${balance:.2f} credit added to your"
-                " order."
-            )
-            st.rerun()
-
-# ------------------------------------------
-# TAB 5: CHECKOUT & INVOICE GENERATOR
-# ------------------------------------------
-with tabs[4]:
   st.header("🧾 Checkout & Invoice Generator")
 
   if not st.session_state.cart:
@@ -824,16 +638,9 @@ with tabs[4]:
           f"**Applied Discount Tier:**"
           f" {discount_label if discount > 0 else 'None'}"
       )
-      if st.session_state.applied_gift_card:
-        st.markdown(
-            f"**Gift Card Active:** {st.session_state.applied_gift_card}"
-            f" (-${st.session_state.gift_card_discount:.2f})"
-        )
     with c2:
       if st.button("Clear Bag"):
         st.session_state.cart = {}
-        st.session_state.applied_gift_card = None
-        st.session_state.gift_card_discount = 0.0
         st.rerun()
 
     st.markdown("---")
@@ -848,18 +655,11 @@ with tabs[4]:
         st.markdown("100% Oil-Based Luxury Impressions")
         st.markdown(f"**Invoice Date:** {datetime.now().strftime('%Y-%m-%d')}")
         st.markdown(f"**Master Cycle:** {get_current_30_day_cycle()}")
-        if active_referral:
-          st.markdown(f"**Partner Referral:** {active_referral}")
       with inv_col2:
         st.markdown(f"**Subtotal (Raw):** ${raw_subtotal:.2f}")
         if discount > 0:
           st.markdown(
               f"**Discount ({discount_label}):** -${raw_subtotal * discount:.2f}"
-          )
-        if st.session_state.applied_gift_card:
-          st.markdown(
-              f"**Gift Card Credit:**"
-              f" -${st.session_state.gift_card_discount:.2f}"
           )
         st.markdown(f"### **Total Due: ${final_subtotal:.2f}**")
 
@@ -948,21 +748,7 @@ with tabs[4]:
               is_priority,
               notes,
               st.session_state.cart,
-              referral_code=active_referral,
           )
-
-          # If gift card was used, mark it as spent/depleted in DB
-          if st.session_state.applied_gift_card:
-            conn_gc = sqlite3.connect(DB_FILE)
-            c_gc = conn_gc.cursor()
-            c_gc.execute(
-                "UPDATE gift_cards SET current_balance = 0, status = 'Redeemed'"
-                " WHERE code = ?",
-                (st.session_state.applied_gift_card,),
-            )
-            conn_gc.commit()
-            conn_gc.close()
-
           st.success(
               f"Order and payment verification successfully submitted for"
               f" {name}!"
@@ -973,13 +759,11 @@ with tabs[4]:
                 " fast-track timeline."
             )
           st.session_state.cart = {}
-          st.session_state.applied_gift_card = None
-          st.session_state.gift_card_discount = 0.0
 
 # ------------------------------------------
-# TAB 6: CUSTOMER ORDER LOOKUP
+# TAB 4: CUSTOMER ORDER LOOKUP
 # ------------------------------------------
-with tabs[5]:
+with tabs[3]:
   st.header("🔍 Customer Order Lookup Portal")
   st.write("Track active order status, preorders, and fulfillment updates.")
 
@@ -1001,15 +785,13 @@ with tabs[5]:
           st.write(f"**Purchased Items:** {row['items_summary']}")
           st.write(f"**Total Bottles:** {row['total_qty']}")
           st.write(f"**Total Amount:** ${row['final_total']:.2f}")
-          if row["referral_code"]:
-            st.write(f"**Partner Referral Tag:** {row['referral_code']}")
           if row["is_priority"]:
             st.warning("🔥 Priority Preorder Queue Active")
 
 # ------------------------------------------
-# TAB 7: MASTER ADMIN & RESTOCKING TOOL
+# TAB 5: MASTER ADMIN & RESTOCKING TOOL
 # ------------------------------------------
-with tabs[6]:
+with tabs[4]:
   st.header("🔒 Master Admin Database & Restocking Management")
   admin_pwd = st.text_input("Enter Admin Security Password", type="password")
 
