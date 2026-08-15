@@ -1338,8 +1338,6 @@ with st.sidebar:
                 button[data-baseweb="tab"][aria-selected="true"] { color: #FAFAFA !important; border-color: #FAFAFA !important; }
                 div[data-testid="stTextInput"] > div { background-color: #262730 !important; color: #FAFAFA !important; }
                 div[data-testid="stTextInput"] input { color: #FAFAFA !important; }
-                
-                /* Dark Mode Button Styling */
                 .stApp button { background-color: #262730 !important; border: 1px solid #4A4A4A !important; }
                 .stApp button p { color: #FAFAFA !important; }
                 </style>
@@ -1357,14 +1355,12 @@ with st.sidebar:
                 button[data-baseweb="tab"][aria-selected="true"] { color: #64FFDA !important; border-color: #64FFDA !important; }
                 div[data-testid="stTextInput"] > div { background-color: #112240 !important; color: #64FFDA !important; }
                 div[data-testid="stTextInput"] input { color: #64FFDA !important; }
-                
-                /* Midnight Blue Button Styling */
                 .stApp button { background-color: #112240 !important; border: 1px solid #64FFDA !important; }
                 .stApp button p { color: #64FFDA !important; }
                 </style>
             """, unsafe_allow_html=True)
             
-        else: # 🟢 Light Mode High-Contrast text, block, and button fix
+        else: # 🟢 Light Mode High-Contrast text, block, and UI elements fix
             st.markdown("""
                 <style>
                 .stApp { background-color: #FFFFFF !important; color: #31333F !important; }
@@ -1375,21 +1371,30 @@ with st.sidebar:
                     color: #31333F !important; 
                 }
                 
-                div[data-testid="stExpander"] { background-color: #FFFFFF !important; }
+                /* 🟢 Fix the Expander Header/Container background from black to clean light grey/white */
+                div[data-testid="stExpander"] { background-color: #FFFFFF !important; border: 1px solid #D3D3D3 !important; }
+                div[data-testid="stExpander"] summary { background-color: #F0F2F6 !important; color: #31333F !important; }
+                div[data-testid="stExpander"] summary * { color: #31333F !important; }
                 div[data-testid="stExpander"] * { color: #31333F !important; }
-                div[data-baseweb="select"] * { color: #31333F !important; }
                 
+                /* 🟢 Fix the Dropdown Select Box container background from black to clear white */
+                div[data-baseweb="select"] > div { background-color: #FFFFFF !important; color: #31333F !important; border: 1px solid #D3D3D3 !important; }
+                div[data-baseweb="select"] * { color: #31333F !important; }
+                label { color: #31333F !important; }
+                
+                /* Tab Bar Visibility Fixes */
                 button[data-baseweb="tab"] { color: #555555 !important; font-weight: 500 !important; }
                 button[data-baseweb="tab"] p { color: #555555 !important; } 
                 button[data-baseweb="tab"][aria-selected="true"] { border-color: #FF4B4B !important; font-weight: 700 !important; }
                 button[data-baseweb="tab"][aria-selected="true"] p { color: #FF4B4B !important; }
                 
+                /* Input Container Overrides */
                 div[data-testid="stTextInput"] > div { background-color: #F0F2F6 !important; border: 1px solid #D3D3D3 !important; }
                 div[data-testid="stTextInput"] input { color: #31333F !important; }
                 
                 div[data-testid="stMetricLabel"] p, div[data-testid="stMetricValue"] { color: #31333F !important; }
                 
-                /* 🟢 Light Mode Button Fix (Forces background to be light and text to be bold and dark) */
+                /* Light Mode Button Fix */
                 .stApp button { 
                     background-color: #F0F2F6 !important; 
                     border: 1px solid #D3D3D3 !important; 
@@ -1398,7 +1403,6 @@ with st.sidebar:
                     color: #31333F !important; 
                     font-weight: 600 !important;
                 }
-                /* Subtle hover state change so buttons still feel reactive */
                 .stApp button:hover {
                     background-color: #E4E6EA !important;
                     border-color: #B0B3B8 !important;
@@ -1417,5 +1421,6 @@ with st.sidebar:
             st.rerun()
             
         st.caption("T Fragrances POS v1.0.0")
+
 
 
