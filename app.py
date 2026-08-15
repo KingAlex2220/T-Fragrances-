@@ -522,8 +522,10 @@ st.sidebar.subheader(f"Total: ${final_subtotal:.2f}")
 # ==========================================
 st.title("T Fragrances")
 
-# --- STREAMLIT NATIVE GOOGLE DRIVE VIDEO PLAYER ---
-st.video("https://drive.google.com/file/d/1jiVNxsvrmN5aZaR2a1PvPK8QstP4udjM/view?usp=sharing")
+# --- NATIVE GITHUB RAW MP4 VIDEO PLAYER ---
+st.video(
+    "https://raw.githubusercontent.com/KingAlex2220/T-Fragrances-/main/deevid_video_33065096.mp4"
+)
 
 st.info(
     "💡 **Looking for something else?**,"
