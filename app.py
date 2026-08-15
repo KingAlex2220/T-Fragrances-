@@ -1310,19 +1310,22 @@ st.markdown("---")
 st.caption(f"**Legal Disclaimer:** {DISCLAIMER_TEXT}")
 st.caption(f"{ALLERGY_DISCLAIMER_TEXT}")
 
-# Place this at the bottom of your sidebar UI code block
+# This explicitly creates the sidebar container and draws the new ellipsis dropdown
 with st.sidebar:
-    # 1. Push the menu down away from your main sidebar content
-    st.spacer()  # Or use a few empty st.write("") lines to create visual padding
+    # Use empty text spaces or write tags to safely push the menu to the bottom
+    st.write("")
+    st.write("")
+    st.write("")
     st.divider() 
     
-    # 2. Render the custom settings expander
+    # Renders your new clean ellipsis settings button
     with st.expander("⋮ System Settings & Options", expanded=False):
         st.write("⚙️ **App Administration**")
         
+        # Use proper unique keys so Streamlit widgets don't conflict
         if st.button("Clear App Cache", key="sidebar_clear_cache"):
             st.cache_data.clear()
-            st.toast("Cache cleared successfully!")
+            st.toast("Cache cleared!")
             
         if st.button("Rerun App Session", key="sidebar_rerun"):
             st.rerun()
