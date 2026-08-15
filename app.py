@@ -1329,41 +1329,68 @@ with st.sidebar:
         if theme_choice == "Dark Mode":
             st.markdown("""
                 <style>
+                /* Global App & Sidebar */
                 .stApp { background-color: #0E1117 !important; color: #FAFAFA !important; }
                 section[data-testid="stSidebar"] { background-color: #1A1C23 !important; }
-                /* Dark theme styling for expander texts and controls */
+                
+                /* Expander internal contrast */
                 div[data-testid="stExpander"] { background-color: #262730 !important; color: #FAFAFA !important; }
                 div[data-testid="stExpander"] * { color: #FAFAFA !important; }
                 select, label { color: #FAFAFA !important; }
+                
+                /* Tab Bar Visibility Fixes */
+                button[data-baseweb="tab"] { color: #8A99AD !important; }
+                button[data-baseweb="tab"][aria-selected="true"] { color: #FAFAFA !important; border-color: #FAFAFA !important; }
+                
+                /* Input & Button Container Overrides */
+                div[data-testid="stTextInput"] > div { background-color: #262730 !important; color: #FAFAFA !important; }
+                div[data-testid="stTextInput"] input { color: #FAFAFA !important; }
                 </style>
             """, unsafe_allow_html=True)
             
         elif theme_choice == "Midnight Blue":
             st.markdown("""
                 <style>
+                /* Global App & Sidebar */
                 .stApp { background-color: #0A192F !important; color: #8892B0 !important; }
                 section[data-testid="stSidebar"] { background-color: #172A45 !important; }
-                /* Midnight theme styling for expander texts and controls */
+                
+                /* Expander internal contrast */
                 div[data-testid="stExpander"] { background-color: #112240 !important; color: #8892B0 !important; }
                 div[data-testid="stExpander"] * { color: #64FFDA !important; }
-                button { border-color: #64FFDA !important; color: #64FFDA !important; }
                 select, label { color: #64FFDA !important; }
+                
+                /* Tab Bar Visibility Fixes */
+                button[data-baseweb="tab"] { color: #8892B0 !important; }
+                button[data-baseweb="tab"][aria-selected="true"] { color: #64FFDA !important; border-color: #64FFDA !important; }
+                
+                /* Input & Button Container Overrides */
+                div[data-testid="stTextInput"] > div { background-color: #112240 !important; color: #64FFDA !important; }
+                div[data-testid="stTextInput"] input { color: #64FFDA !important; }
+                button { border-color: #64FFDA !important; color: #64FFDA !important; }
                 </style>
             """, unsafe_allow_html=True)
             
-        else: # 🟢 Light Mode (High Contrast Text Fix)
+        else: # 🟢 Light Mode High-Contrast Overrides
             st.markdown("""
                 <style>
+                /* Global App & Sidebar */
                 .stApp { background-color: #FFFFFF !important; color: #31333F !important; }
                 section[data-testid="stSidebar"] { background-color: #F0F2F6 !important; }
                 
-                /* Force the container to be white and ALL text elements inside it to be charcoal black */
+                /* Expander internal contrast */
                 div[data-testid="stExpander"] { background-color: #FFFFFF !important; color: #31333F !important; }
                 div[data-testid="stExpander"] * { color: #31333F !important; }
-                
-                /* Ensure select boxes, drop-down arrows, and labels maintain readable dark text */
                 div[data-baseweb="select"] * { color: #31333F !important; }
                 label { color: #31333F !important; }
+                
+                /* 🟢 Tab Bar Visibility Fixes (Forces unselected tabs to be dark gray instead of white) */
+                button[data-baseweb="tab"] { color: #555555 !important; font-weight: 500 !important; }
+                button[data-baseweb="tab"][aria-selected="true"] { color: #FF4B4B !important; border-color: #FF4B4B !important; font-weight: 700 !important; }
+                
+                /* 🟢 Input Container Overrides (Forces search bars to be clean white with crisp dark text) */
+                div[data-testid="stTextInput"] > div { background-color: #F0F2F6 !important; color: #31333F !important; border: 1px solid #D3D3D3 !important; }
+                div[data-testid="stTextInput"] input { color: #31333F !important; }
                 </style>
             """, unsafe_allow_html=True)
 
