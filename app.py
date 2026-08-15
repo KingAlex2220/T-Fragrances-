@@ -15,19 +15,21 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded",
 )
-# Target only the GitHub icon wrapper specifically, leaving the main header and ellipsis menu alone
-hide_github_only = """
+# target and hide the Action Button bar completely (GitHub & Fork elements)
+hide_github_keep_menu = """
     <style>
-    div[data-testid="stActionButtonIcon"] {
+    /* Selects and hides the entire top action button block */
+    div[data-testid="stActionButtonRow"] {
         display: none !important;
     }
-    /* Fallback selector for older Streamlit versions */
-    #GithubIcon {
-        visibility: hidden !important;
+    /* Separate selector to ensure the specific button icon remains missing */
+    button[data-testid="stActionButton"] {
+        display: none !important;
     }
     </style>
 """
-st.markdown(hide_github_only, unsafe_allow_html=True)
+st.markdown(hide_github_keep_menu, unsafe_allow_html=True)
+
 
 
 # ==========================================
