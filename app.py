@@ -1360,35 +1360,30 @@ with st.sidebar:
                 </style>
             """, unsafe_allow_html=True)
             
-                else: # 🟢 Light Mode High-Contrast text, block, UI elements, and FORCE SEARCH BOX fix
+        else:
             st.markdown("""
                 <style>
                 .stApp { background-color: #FFFFFF !important; color: #31333F !important; }
                 section[data-testid="stSidebar"] { background-color: #F0F2F6 !important; }
                 
-                /* High-contrast colors for baseline text elements */
                 .stApp p, .stApp span, .stApp div, .stApp h1, .stApp h2, .stApp h3, .stApp label, .stApp li { 
                     color: #31333F !important; 
                 }
                 
-                /* Fix the Expander Header/Container background from black to clean light grey/white */
                 div[data-testid="stExpander"] { background-color: #FFFFFF !important; border: 1px solid #D3D3D3 !important; }
                 div[data-testid="stExpander"] summary { background-color: #F0F2F6 !important; color: #31333F !important; }
                 div[data-testid="stExpander"] summary * { color: #31333F !important; }
                 div[data-testid="stExpander"] * { color: #31333F !important; }
                 
-                /* Fix the Dropdown Select Box container background from black to clear white */
                 div[data-baseweb="select"] > div { background-color: #FFFFFF !important; color: #31333F !important; border: 1px solid #D3D3D3 !important; }
                 div[data-baseweb="select"] * { color: #31333F !important; }
                 label { color: #31333F !important; }
                 
-                /* Tab Bar Visibility Fixes */
                 button[data-baseweb="tab"] { color: #555555 !important; font-weight: 500 !important; }
                 button[data-baseweb="tab"] p { color: #555555 !important; } 
                 button[data-baseweb="tab"][aria-selected="true"] { border-color: #FF4B4B !important; font-weight: 700 !important; }
                 button[data-baseweb="tab"][aria-selected="true"] p { color: #FF4B4B !important; }
                 
-                /* 🟢 ULTIMATE FORCE FIX: Targets all possible layers and inner containers of the search input */
                 div[data-testid="stTextInput"], 
                 div[data-testid="stTextInput"] > div, 
                 div[data-testid="stTextInput"] div[data-baseweb="base-input"],
@@ -1399,7 +1394,6 @@ with st.sidebar:
                     color: #31333F !important;
                 }
                 
-                /* Force the native internal HTML input element away from system dark hues */
                 div[data-testid="stTextInput"] input { 
                     color: #31333F !important; 
                     background-color: #FFFFFF !important;
@@ -1407,7 +1401,6 @@ with st.sidebar:
                     -webkit-text-fill-color: #31333F !important;
                 }
                 
-                /* Targets the inner placeholder text specifically */
                 div[data-testid="stTextInput"] input::placeholder {
                     color: #757575 !important;
                     opacity: 1 !important;
@@ -1415,7 +1408,6 @@ with st.sidebar:
                 
                 div[data-testid="stMetricLabel"] p, div[data-testid="stMetricValue"] { color: #31333F !important; }
                 
-                /* Light Mode Button Fix */
                 .stApp button { 
                     background-color: #F0F2F6 !important; 
                     border: 1px solid #D3D3D3 !important; 
@@ -1431,7 +1423,6 @@ with st.sidebar:
                 </style>
             """, unsafe_allow_html=True)
 
-
         st.divider()
         st.write("⚙️ **App Administration**")
         
@@ -1443,6 +1434,7 @@ with st.sidebar:
             st.rerun()
             
         st.caption("T Fragrances POS v1.0.0")
+
 
 
 
