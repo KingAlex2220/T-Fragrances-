@@ -19,7 +19,7 @@ st.set_page_config(
 hide_github_icon = """
     <style>
     #GithubIcon {visibility: hidden;}
-    header {visibility: visible;}
+    header {visibility: hidden;}
     </style>
 """
 st.markdown(hide_github_icon, unsafe_allow_html=True)
