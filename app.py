@@ -15,6 +15,14 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded",
 )
+# Hide the GitHub icon and the Streamlit top header bar
+hide_github_icon = """
+    <style>
+    #GithubIcon {visibility: hidden;}
+    header {visibility: hidden;}
+    </style>
+"""
+st.markdown(hide_github_icon, unsafe_allow_html=True)
 
 # ==========================================
 # DATABASE SETUP & AUTO-MIGRATION
