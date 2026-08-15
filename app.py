@@ -15,6 +15,19 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded",
 )
+# Target only the GitHub icon wrapper specifically, leaving the main header and ellipsis menu alone
+hide_github_only = """
+    <style>
+    div[data-testid="stActionButtonIcon"] {
+        display: none !important;
+    }
+    /* Fallback selector for older Streamlit versions */
+    #GithubIcon {
+        visibility: hidden !important;
+    }
+    </style>
+"""
+st.markdown(hide_github_only, unsafe_allow_html=True)
 
 # ==========================================
 # DATABASE SETUP & AUTO-MIGRATION
