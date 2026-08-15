@@ -1307,28 +1307,3 @@ with tabs[6]:
 st.markdown("---")
 st.caption(f"**Legal Disclaimer:** {DISCLAIMER_TEXT}")
 st.caption(f"{ALLERGY_DISCLAIMER_TEXT}")
-
-# ===========================================
-# Custom Ellipsis menu relocated
-# ===========================================
-    for item_id, item_qty in cart_items.items():
-        c.execute("UPDATE inventory SET stock_l...") # This is where your code cut off
-
-# 🟢 PASTE THE SECOND PIECE OF CODE HERE (Creates the new sidebar menu)
-# This explicitly creates the sidebar container and draws the new ellipsis dropdown
-with st.sidebar:
-    st.markdown("<br><br><br>" * 3, unsafe_allow_html=True) # Pushes it to the bottom of the sidebar
-    st.divider() 
-    
-    # Renders your new clean ellipsis settings button
-    with st.expander("⋮ System Settings & Options", expanded=False):
-        st.write("⚙️ **App Administration**")
-        
-        if st.button("Clear App Cache", key="sidebar_clear_cache"):
-            st.cache_data.clear()
-            st.toast("Cache cleared!")
-            
-        if st.button("Rerun App Session", key="sidebar_rerun"):
-            st.rerun()
-            
-        st.caption("T Fragrances POS v1.0.0")
