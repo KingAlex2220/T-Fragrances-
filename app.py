@@ -1317,24 +1317,24 @@ with st.sidebar:
     st.markdown("<br><br><br>" * 3, unsafe_allow_html=True) 
     st.divider() 
     
-    # Renders the clean custom ellipsis settings button
     with st.expander("⋮ System Settings & Options", expanded=False):
         st.write("🎨 **Appearance & Theme**")
         
-        # 1. Dropdown for selecting the theme option
         theme_choice = st.selectbox(
             "Select Theme Mode",
             options=["Light Mode", "Dark Mode", "Midnight Blue"],
             key="app_theme_selection"
         )
         
-        # 2. Inject CSS rules dynamically depending on selection
         if theme_choice == "Dark Mode":
             st.markdown("""
                 <style>
                 .stApp { background-color: #0E1117 !important; color: #FAFAFA !important; }
                 section[data-testid="stSidebar"] { background-color: #1A1C23 !important; }
-                div[data-testid="stExpander"] { background-color: #262730 !important; }
+                /* Dark theme styling for expander texts and controls */
+                div[data-testid="stExpander"] { background-color: #262730 !important; color: #FAFAFA !important; }
+                div[data-testid="stExpander"] * { color: #FAFAFA !important; }
+                select, label { color: #FAFAFA !important; }
                 </style>
             """, unsafe_allow_html=True)
             
@@ -1343,18 +1343,27 @@ with st.sidebar:
                 <style>
                 .stApp { background-color: #0A192F !important; color: #8892B0 !important; }
                 section[data-testid="stSidebar"] { background-color: #172A45 !important; }
-                div[data-testid="stExpander"] { background-color: #112240 !important; }
-                /* Change button text or interactive borders to an accent color */
+                /* Midnight theme styling for expander texts and controls */
+                div[data-testid="stExpander"] { background-color: #112240 !important; color: #8892B0 !important; }
+                div[data-testid="stExpander"] * { color: #64FFDA !important; }
                 button { border-color: #64FFDA !important; color: #64FFDA !important; }
+                select, label { color: #64FFDA !important; }
                 </style>
             """, unsafe_allow_html=True)
             
-        else: # Light Mode (Default)
+        else: # 🟢 Light Mode (High Contrast Text Fix)
             st.markdown("""
                 <style>
                 .stApp { background-color: #FFFFFF !important; color: #31333F !important; }
                 section[data-testid="stSidebar"] { background-color: #F0F2F6 !important; }
-                div[data-testid="stExpander"] { background-color: #FFFFFF !important; }
+                
+                /* Force the container to be white and ALL text elements inside it to be charcoal black */
+                div[data-testid="stExpander"] { background-color: #FFFFFF !important; color: #31333F !important; }
+                div[data-testid="stExpander"] * { color: #31333F !important; }
+                
+                /* Ensure select boxes, drop-down arrows, and labels maintain readable dark text */
+                div[data-baseweb="select"] * { color: #31333F !important; }
+                label { color: #31333F !important; }
                 </style>
             """, unsafe_allow_html=True)
 
@@ -1369,4 +1378,3 @@ with st.sidebar:
             st.rerun()
             
         st.caption("T Fragrances POS v1.0.0")
-
