@@ -1338,6 +1338,10 @@ with st.sidebar:
                 button[data-baseweb="tab"][aria-selected="true"] { color: #FAFAFA !important; border-color: #FAFAFA !important; }
                 div[data-testid="stTextInput"] > div { background-color: #262730 !important; color: #FAFAFA !important; }
                 div[data-testid="stTextInput"] input { color: #FAFAFA !important; }
+                
+                /* Dark Mode Button Styling */
+                .stApp button { background-color: #262730 !important; border: 1px solid #4A4A4A !important; }
+                .stApp button p { color: #FAFAFA !important; }
                 </style>
             """, unsafe_allow_html=True)
             
@@ -1353,17 +1357,20 @@ with st.sidebar:
                 button[data-baseweb="tab"][aria-selected="true"] { color: #64FFDA !important; border-color: #64FFDA !important; }
                 div[data-testid="stTextInput"] > div { background-color: #112240 !important; color: #64FFDA !important; }
                 div[data-testid="stTextInput"] input { color: #64FFDA !important; }
-                button { border-color: #64FFDA !important; color: #64FFDA !important; }
+                
+                /* Midnight Blue Button Styling */
+                .stApp button { background-color: #112240 !important; border: 1px solid #64FFDA !important; }
+                .stApp button p { color: #64FFDA !important; }
                 </style>
             """, unsafe_allow_html=True)
             
-        else: # 🟢 Light Mode High-Contrast text and block fix
+        else: # 🟢 Light Mode High-Contrast text, block, and button fix
             st.markdown("""
                 <style>
                 .stApp { background-color: #FFFFFF !important; color: #31333F !important; }
                 section[data-testid="stSidebar"] { background-color: #F0F2F6 !important; }
                 
-                /* High-contrast colors for all baseline text elements */
+                /* High-contrast colors for baseline text elements */
                 .stApp p, .stApp span, .stApp div, .stApp h1, .stApp h2, .stApp h3, .stApp label, .stApp li { 
                     color: #31333F !important; 
                 }
@@ -1381,6 +1388,21 @@ with st.sidebar:
                 div[data-testid="stTextInput"] input { color: #31333F !important; }
                 
                 div[data-testid="stMetricLabel"] p, div[data-testid="stMetricValue"] { color: #31333F !important; }
+                
+                /* 🟢 Light Mode Button Fix (Forces background to be light and text to be bold and dark) */
+                .stApp button { 
+                    background-color: #F0F2F6 !important; 
+                    border: 1px solid #D3D3D3 !important; 
+                }
+                .stApp button p { 
+                    color: #31333F !important; 
+                    font-weight: 600 !important;
+                }
+                /* Subtle hover state change so buttons still feel reactive */
+                .stApp button:hover {
+                    background-color: #E4E6EA !important;
+                    border-color: #B0B3B8 !important;
+                }
                 </style>
             """, unsafe_allow_html=True)
 
@@ -1395,4 +1417,5 @@ with st.sidebar:
             st.rerun()
             
         st.caption("T Fragrances POS v1.0.0")
+
 
