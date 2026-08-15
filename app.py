@@ -16,6 +16,38 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
+# ==========================================
+# PAGE CONFIGURATION
+# ==========================================
+st.set_page_config(
+    page_title="T Fragrances | Storefront & POS",
+    page_icon="✨",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
+
+# 🟢 UPDATE THIS BLOCK (Hides host utilities but leaves the collapse/expand arrow intact)
+hide_host_utilities_only = """
+    <style>
+    /* Target only the deployment host action tools container */
+    header div[data-testid="stHeaderActionElements"] {
+        display: none !important;
+    }
+    
+    /* Fallback selector targeting the specific hosting utility bar wrapper */
+    .stAppHeader > div:first-child > div:first-child {
+        display: none !important;
+    }
+    
+    /* Explicitly protect the sidebar collapse/expand trigger arrow wrapper */
+    div[data-testid="collapsedControl"] {
+        visibility: visible !important;
+        display: flex !important;
+    }
+    </style>
+"""
+st.markdown(hide_host_utilities_only, unsafe_allow_html=True)
+
 
 # ==========================================
 # DATABASE SETUP & AUTO-MIGRATION
