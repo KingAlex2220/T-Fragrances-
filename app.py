@@ -15,20 +15,28 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded",
 )
-# target and hide the Action Button bar completely (GitHub & Fork elements)
+# Target the toolbar elements directly by their functional tags and structure
 hide_github_keep_menu = """
     <style>
-    /* Selects and hides the entire top action button block */
-    div[data-testid="stActionButtonRow"] {
+    /* Hide the text link and icon buttons next to the menu */
+    header data-testid="stHeaderActionElements",
+    header button:not([data-testid="stMainMenu"]):not([aria-label="open user menu"]) {
         display: none !important;
     }
-    /* Separate selector to ensure the specific button icon remains missing */
-    button[data-testid="stActionButton"] {
+    
+    /* Strict fallback targeting the specific parent container for host actions */
+    .stAppHeader > div:first-child > div:first-child {
         display: none !important;
+    }
+    
+    /* Force the main menu button container to stay visible */
+    div[data-testid="stMainMenu"] {
+        display: block !important;
     }
     </style>
 """
 st.markdown(hide_github_keep_menu, unsafe_allow_html=True)
+
 
 
 
