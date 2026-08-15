@@ -1310,19 +1310,57 @@ st.markdown("---")
 st.caption(f"**Legal Disclaimer:** {DISCLAIMER_TEXT}")
 st.caption(f"{ALLERGY_DISCLAIMER_TEXT}")
 
-# This explicitly creates the sidebar container and draws the new ellipsis dropdown
+# ==========================================
+# CUSTOM SIDEBAR ELLIPSIS MENU & THEME SWITCHER
+# ==========================================
 with st.sidebar:
-    # Use empty text spaces or write tags to safely push the menu to the bottom
-    st.write("")
-    st.write("")
-    st.write("")
+    st.markdown("<br><br><br>" * 3, unsafe_allow_html=True) 
     st.divider() 
     
-    # Renders your new clean ellipsis settings button
+    # Renders the clean custom ellipsis settings button
     with st.expander("⋮ System Settings & Options", expanded=False):
+        st.write("🎨 **Appearance & Theme**")
+        
+        # 1. Dropdown for selecting the theme option
+        theme_choice = st.selectbox(
+            "Select Theme Mode",
+            options=["Light Mode", "Dark Mode", "Midnight Blue"],
+            key="app_theme_selection"
+        )
+        
+        # 2. Inject CSS rules dynamically depending on selection
+        if theme_choice == "Dark Mode":
+            st.markdown("""
+                <style>
+                .stApp { background-color: #0E1117 !important; color: #FAFAFA !important; }
+                section[data-testid="stSidebar"] { background-color: #1A1C23 !important; }
+                div[data-testid="stExpander"] { background-color: #262730 !important; }
+                </style>
+            """, unsafe_allow_html=True)
+            
+        elif theme_choice == "Midnight Blue":
+            st.markdown("""
+                <style>
+                .stApp { background-color: #0A192F !important; color: #8892B0 !important; }
+                section[data-testid="stSidebar"] { background-color: #172A45 !important; }
+                div[data-testid="stExpander"] { background-color: #112240 !important; }
+                /* Change button text or interactive borders to an accent color */
+                button { border-color: #64FFDA !important; color: #64FFDA !important; }
+                </style>
+            """, unsafe_allow_html=True)
+            
+        else: # Light Mode (Default)
+            st.markdown("""
+                <style>
+                .stApp { background-color: #FFFFFF !important; color: #31333F !important; }
+                section[data-testid="stSidebar"] { background-color: #F0F2F6 !important; }
+                div[data-testid="stExpander"] { background-color: #FFFFFF !important; }
+                </style>
+            """, unsafe_allow_html=True)
+
+        st.divider()
         st.write("⚙️ **App Administration**")
         
-        # Use proper unique keys so Streamlit widgets don't conflict
         if st.button("Clear App Cache", key="sidebar_clear_cache"):
             st.cache_data.clear()
             st.toast("Cache cleared!")
@@ -1331,3 +1369,4 @@ with st.sidebar:
             st.rerun()
             
         st.caption("T Fragrances POS v1.0.0")
+
