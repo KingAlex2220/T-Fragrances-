@@ -1329,20 +1329,13 @@ with st.sidebar:
         if theme_choice == "Dark Mode":
             st.markdown("""
                 <style>
-                /* Global App & Sidebar */
                 .stApp { background-color: #0E1117 !important; color: #FAFAFA !important; }
                 section[data-testid="stSidebar"] { background-color: #1A1C23 !important; }
-                
-                /* Expander internal contrast */
                 div[data-testid="stExpander"] { background-color: #262730 !important; color: #FAFAFA !important; }
                 div[data-testid="stExpander"] * { color: #FAFAFA !important; }
                 select, label { color: #FAFAFA !important; }
-                
-                /* Tab Bar Visibility Fixes */
                 button[data-baseweb="tab"] { color: #8A99AD !important; }
                 button[data-baseweb="tab"][aria-selected="true"] { color: #FAFAFA !important; border-color: #FAFAFA !important; }
-                
-                /* Input & Button Container Overrides */
                 div[data-testid="stTextInput"] > div { background-color: #262730 !important; color: #FAFAFA !important; }
                 div[data-testid="stTextInput"] input { color: #FAFAFA !important; }
                 </style>
@@ -1351,61 +1344,45 @@ with st.sidebar:
         elif theme_choice == "Midnight Blue":
             st.markdown("""
                 <style>
-                /* Global App & Sidebar */
                 .stApp { background-color: #0A192F !important; color: #8892B0 !important; }
                 section[data-testid="stSidebar"] { background-color: #172A45 !important; }
-                
-                /* Expander internal contrast */
                 div[data-testid="stExpander"] { background-color: #112240 !important; color: #8892B0 !important; }
                 div[data-testid="stExpander"] * { color: #64FFDA !important; }
                 select, label { color: #64FFDA !important; }
-                
-                /* Tab Bar Visibility Fixes */
                 button[data-baseweb="tab"] { color: #8892B0 !important; }
                 button[data-baseweb="tab"][aria-selected="true"] { color: #64FFDA !important; border-color: #64FFDA !important; }
-                
-                /* Input & Button Container Overrides */
                 div[data-testid="stTextInput"] > div { background-color: #112240 !important; color: #64FFDA !important; }
                 div[data-testid="stTextInput"] input { color: #64FFDA !important; }
                 button { border-color: #64FFDA !important; color: #64FFDA !important; }
                 </style>
             """, unsafe_allow_html=True)
             
-        else: # 🟢 Light Mode High-Contrast Overrides
-                    else: # 🟢 Light Mode High-Contrast text and block fix
+        else: # 🟢 Light Mode High-Contrast text and block fix
             st.markdown("""
                 <style>
-                /* Global App & Sidebar Backgrounds */
                 .stApp { background-color: #FFFFFF !important; color: #31333F !important; }
                 section[data-testid="stSidebar"] { background-color: #F0F2F6 !important; }
                 
-                /* 🟢 GLOBAL CATCH-ALL HIGH-CONTRAST FOR LIGHT MODE TEXT ELEMENTS 
-                   Forces all text wrappers, spans, paragraphs, and lists away from white */
+                /* High-contrast colors for all baseline text elements */
                 .stApp p, .stApp span, .stApp div, .stApp h1, .stApp h2, .stApp h3, .stApp label, .stApp li { 
                     color: #31333F !important; 
                 }
                 
-                /* Expander internal contrast */
                 div[data-testid="stExpander"] { background-color: #FFFFFF !important; }
                 div[data-testid="stExpander"] * { color: #31333F !important; }
                 div[data-baseweb="select"] * { color: #31333F !important; }
                 
-                /* Tab Bar Visibility Fixes */
                 button[data-baseweb="tab"] { color: #555555 !important; font-weight: 500 !important; }
-                button[data-baseweb="tab"] p { color: #555555 !important; } /* Safeguard inside tab headers */
+                button[data-baseweb="tab"] p { color: #555555 !important; } 
                 button[data-baseweb="tab"][aria-selected="true"] { border-color: #FF4B4B !important; font-weight: 700 !important; }
                 button[data-baseweb="tab"][aria-selected="true"] p { color: #FF4B4B !important; }
                 
-                /* Input Container Overrides */
                 div[data-testid="stTextInput"] > div { background-color: #F0F2F6 !important; border: 1px solid #D3D3D3 !important; }
                 div[data-testid="stTextInput"] input { color: #31333F !important; }
                 
-                /* Keep metrics, labels, and helper captions dark and legible */
                 div[data-testid="stMetricLabel"] p, div[data-testid="stMetricValue"] { color: #31333F !important; }
-                .stMarkdown caption, .stApp small { color: #555555 !important; }
                 </style>
             """, unsafe_allow_html=True)
-
 
         st.divider()
         st.write("⚙️ **App Administration**")
@@ -1418,3 +1395,4 @@ with st.sidebar:
             st.rerun()
             
         st.caption("T Fragrances POS v1.0.0")
+
