@@ -15,15 +15,6 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded",
 )
-hide_entire_header = """
-    <style>
-    header {visibility: hidden !important;}
-    div[data-testid="stHeader"] {display: none !important;}
-    </style>
-"""
-st.markdown(hide_entire_header, unsafe_allow_html=True)
-
-
 
 # ==========================================
 # DATABASE SETUP & AUTO-MIGRATION
