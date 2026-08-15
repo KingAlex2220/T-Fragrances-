@@ -522,16 +522,8 @@ st.sidebar.subheader(f"Total: ${final_subtotal:.2f}")
 # ==========================================
 st.title("T Fragrances")
 
-# --- EMBEDDED GOOGLE DRIVE VIDEO SHOWCASE FEATURE ---
-google_drive_video_html = """
-<div style="display: flex; justify-content: center; margin-bottom: 20px;">
-  <video width="100%" controls autoplay muted loop style="border-radius: 10px; max-height: 500px; object-fit: cover;">
-    <source src="https://drive.google.com/uc?export=download&id=1jiVNxsvrmN5aZaR2a1PvPK8QstP4udjM" type="video/mp4">
-    Your browser does not support the video tag.
-  </video>
-</div>
-"""
-st.markdown(google_drive_video_html, unsafe_allow_html=True)
+# --- STREAMLIT NATIVE GOOGLE DRIVE VIDEO PLAYER ---
+st.video("https://drive.google.com/file/d/1jiVNxsvrmN5aZaR2a1PvPK8QstP4udjM/view?usp=sharing")
 
 st.info(
     "💡 **Looking for something else?**,"
