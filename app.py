@@ -1434,3 +1434,9 @@ with st.sidebar:
             st.rerun()
             
         st.caption("T Fragrances POS v1.0.0")
+
+    # 🟢 NEW: Add a native Fork link button at the very bottom of the sidebar
+    st.link_button("🍴 Fork App", "https://streamlit.io", use_container_width=True)
+
+            
+        st.caption("T Fragrances POS v1.0.0")
