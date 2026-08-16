@@ -428,7 +428,7 @@ ZELLE_ACCOUNTS = {
     },
     "eq": {
         "name": "Eriq Dior",
-        "identifier": "eriq.dior@example.com",
+        "identifier": "6893122796",
         "qr_file": "zelle_qr_eq.png"
     }
 }
