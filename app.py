@@ -1309,3 +1309,128 @@ with tabs[6]:
 st.markdown("---")
 st.caption(f"**Legal Disclaimer:** {DISCLAIMER_TEXT}")
 st.caption(f"{ALLERGY_DISCLAIMER_TEXT}")
+
+# =============================================
+# CUSTOM SIDEBAR ELLIPSIS MENU & THEME SWITCHER
+# =============================================
+with st.sidebar:
+    st.markdown("<br><br><br>" * 3, unsafe_allow_html=True) 
+    st.divider() 
+    
+    with st.expander("⋮ System Settings & Options", expanded=False):
+        st.write("🎨 **Appearance & Theme**")
+        
+        theme_choice = st.selectbox(
+            "Select Theme Mode",
+            options=["Light Mode", "Dark Mode", "Midnight Blue"],
+            key="app_theme_selection"
+        )
+        
+        if theme_choice == "Dark Mode":
+            st.markdown("""
+                <style>
+                .stApp { background-color: #0E1117 !important; color: #FAFAFA !important; }
+                section[data-testid="stSidebar"] { background-color: #1A1C23 !important; }
+                div[data-testid="stExpander"] { background-color: #262730 !important; color: #FAFAFA !important; }
+                div[data-testid="stExpander"] * { color: #FAFAFA !important; }
+                select, label { color: #FAFAFA !important; }
+                button[data-baseweb="tab"] { color: #8A99AD !important; }
+                button[data-baseweb="tab"][aria-selected="true"] { color: #FAFAFA !important; border-color: #FAFAFA !important; }
+                div[data-testid="stTextInput"] > div { background-color: #262730 !important; color: #FAFAFA !important; }
+                div[data-testid="stTextInput"] input { color: #FAFAFA !important; }
+                .stApp button { background-color: #262730 !important; border: 1px solid #4A4A4A !important; }
+                .stApp button p { color: #FAFAFA !important; }
+                </style>
+            """, unsafe_allow_html=True)
+            
+        elif theme_choice == "Midnight Blue":
+            st.markdown("""
+                <style>
+                .stApp { background-color: #0A192F !important; color: #8892B0 !important; }
+                section[data-testid="stSidebar"] { background-color: #172A45 !important; }
+                div[data-testid="stExpander"] { background-color: #112240 !important; color: #8892B0 !important; }
+                div[data-testid="stExpander"] * { color: #64FFDA !important; }
+                select, label { color: #64FFDA !important; }
+                button[data-baseweb="tab"] { color: #8892B0 !important; }
+                button[data-baseweb="tab"][aria-selected="true"] { color: #64FFDA !important; border-color: #64FFDA !important; }
+                div[data-testid="stTextInput"] > div { background-color: #112240 !important; color: #64FFDA !important; }
+                div[data-testid="stTextInput"] input { color: #64FFDA !important; }
+                .stApp button { background-color: #112240 !important; border: 1px solid #64FFDA !important; }
+                .stApp button p { color: #64FFDA !important; }
+                </style>
+            """, unsafe_allow_html=True)
+            
+        else:
+            st.markdown("""
+                <style>
+                .stApp { background-color: #FFFFFF !important; color: #31333F !important; }
+                section[data-testid="stSidebar"] { background-color: #F0F2F6 !important; }
+                
+                .stApp p, .stApp span, .stApp div, .stApp h1, .stApp h2, .stApp h3, .stApp label, .stApp li { 
+                    color: #31333F !important; 
+                }
+                
+                div[data-testid="stExpander"] { background-color: #FFFFFF !important; border: 1px solid #D3D3D3 !important; }
+                div[data-testid="stExpander"] summary { background-color: #F0F2F6 !important; color: #31333F !important; }
+                div[data-testid="stExpander"] summary * { color: #31333F !important; }
+                div[data-testid="stExpander"] * { color: #31333F !important; }
+                
+                div[data-baseweb="select"] > div { background-color: #FFFFFF !important; color: #31333F !important; border: 1px solid #D3D3D3 !important; }
+                div[data-baseweb="select"] * { color: #31333F !important; }
+                label { color: #31333F !important; }
+                
+                button[data-baseweb="tab"] { color: #555555 !important; font-weight: 500 !important; }
+                button[data-baseweb="tab"] p { color: #555555 !important; } 
+                button[data-baseweb="tab"][aria-selected="true"] { border-color: #FF4B4B !important; font-weight: 700 !important; }
+                button[data-baseweb="tab"][aria-selected="true"] p { color: #FF4B4B !important; }
+                
+                div[data-testid="stTextInput"], 
+                div[data-testid="stTextInput"] > div, 
+                div[data-testid="stTextInput"] div[data-baseweb="base-input"],
+                div[data-testid="stTextInput"] div[data-baseweb="input"] { 
+                    background-color: #FFFFFF !important; 
+                    background: #FFFFFF !important;
+                    border: 1px solid #D3D3D3 !important; 
+                    color: #31333F !important;
+                }
+                
+                div[data-testid="stTextInput"] input { 
+                    color: #31333F !important; 
+                    background-color: #FFFFFF !important;
+                    background: #FFFFFF !important;
+                    -webkit-text-fill-color: #31333F !important;
+                }
+                
+                div[data-testid="stTextInput"] input::placeholder {
+                    color: #757575 !important;
+                    opacity: 1 !important;
+                }
+                
+                div[data-testid="stMetricLabel"] p, div[data-testid="stMetricValue"] { color: #31333F !important; }
+                
+                .stApp button { 
+                    background-color: #F0F2F6 !important; 
+                    border: 1px solid #D3D3D3 !important; 
+                }
+                .stApp button p { 
+                    color: #31333F !important; 
+                    font-weight: 600 !important;
+                }
+                .stApp button:hover {
+                    background-color: #E4E6EA !important;
+                    border-color: #B0B3B8 !important;
+                }
+                </style>
+            """, unsafe_allow_html=True)
+
+        st.divider()
+        st.write("⚙️ **App Administration**")
+        
+        if st.button("Clear App Cache", key="sidebar_clear_cache"):
+            st.cache_data.clear()
+            st.toast("Cache cleared!")
+            
+        if st.button("Rerun App Session", key="sidebar_rerun"):
+            st.rerun()
+            
+        st.caption("T Fragrances POS v1.0.0")
