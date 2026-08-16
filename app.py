@@ -1436,4 +1436,4 @@ with st.sidebar:
         st.caption("T Fragrances POS v1.0.0")
 
     # This lives perfectly aligned outside the expander container row
-    st.link_button("🍴 Fork App", "https://streamlit.io", use_container_width=True)
+    st.link_button("🍴 Fork App", "https://share.streamlit.io", use_container_width=True)
