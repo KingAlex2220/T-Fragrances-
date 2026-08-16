@@ -1309,8 +1309,3 @@ with tabs[6]:
 st.markdown("---")
 st.caption(f"**Legal Disclaimer:** {DISCLAIMER_TEXT}")
 st.caption(f"{ALLERGY_DISCLAIMER_TEXT}")
-
-
-
-
-
