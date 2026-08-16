@@ -16,16 +16,6 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ==========================================
-# PAGE CONFIGURATION
-# ==========================================
-st.set_page_config(
-    page_title="T Fragrances | Storefront & POS",
-    page_icon="✨",
-    layout="wide",
-    initial_sidebar_state="expanded",
-)
-
 
 # ==========================================
 # DATABASE SETUP & AUTO-MIGRATION
@@ -410,7 +400,7 @@ def add_to_cart(item_id):
 
 
 # ==========================================
-# URL QUERY PARAMS FOR REFERRAL TRACKING
+# DYNAMIC AFFILIATE & ZELLE ACCOUNT MAPPING
 # ==========================================
 PARTNER_MAPPING = {
     "alex": "Alexander Thompson",
@@ -419,18 +409,51 @@ PARTNER_MAPPING = {
     "eq": "Eriq Dior",
 }
 
-query_params = st.query_params
-active_referral = query_params.get("ref", "").strip().lower()
+# Zelle Accounts dynamically routed based on referrer tag
+ZELLE_ACCOUNTS = {
+    "alex": {
+        "name": "Alexander Thompson",
+        "identifier": "8632364196",
+        "qr_file": "zelle_qr_alex.png"
+    },
+    "jameka": {
+        "name": "Jameka Hatton",
+        "identifier": "jameka.hatton@example.com",
+        "qr_file": "zelle_qr_jameka.png"
+    },
+    "ray": {
+        "name": "Ira Ray Thompson",
+        "identifier": "ira.thompson@example.com",
+        "qr_file": "zelle_qr_ray.png"
+    },
+    "eq": {
+        "name": "Eriq Dior",
+        "identifier": "eriq.dior@example.com",
+        "qr_file": "zelle_qr_eq.png"
+    }
+}
 
-if active_referral in PARTNER_MAPPING:
-  st.session_state["active_ref"] = PARTNER_MAPPING[active_referral]
-elif active_referral:
-  st.session_state["active_ref"] = active_referral
+DEFAULT_ZELLE_KEY = "alex"
+
+query_params = st.query_params
+raw_ref = query_params.get("ref", "").strip().lower()
+
+if raw_ref in PARTNER_MAPPING:
+  st.session_state["active_ref_key"] = raw_ref
+  st.session_state["active_ref"] = PARTNER_MAPPING[raw_ref]
+elif raw_ref:
+  st.session_state["active_ref_key"] = raw_ref
+  st.session_state["active_ref"] = raw_ref
 else:
   if "active_ref" not in st.session_state:
+    st.session_state["active_ref_key"] = DEFAULT_ZELLE_KEY
     st.session_state["active_ref"] = ""
 
+current_ref_key = st.session_state.get("active_ref_key", DEFAULT_ZELLE_KEY)
 current_ref_tag = st.session_state.get("active_ref", "")
+
+# Determine target Zelle payout details
+active_zelle = ZELLE_ACCOUNTS.get(current_ref_key, ZELLE_ACCOUNTS[DEFAULT_ZELLE_KEY])
 
 # ==========================================
 # SIDEBAR NAVIGATION
@@ -482,10 +505,13 @@ with pay_tab2:
     st.info("Upload venmo_qr.png")
 
 with pay_tab3:
-  st.markdown("**Alexander Thompson**")
-  st.markdown("`8632364196`")
-  if os.path.exists("zelle_qr.png"):
-    st.image("zelle_qr.png", use_container_width=True)
+  st.markdown(f"**{active_zelle['name']}**")
+  st.markdown(f"`{active_zelle['identifier']}`")
+  
+  # Check partner-specific QR image first, fall back to default zelle_qr.png
+  zelle_img_path = active_zelle["qr_file"] if os.path.exists(active_zelle["qr_file"]) else "zelle_qr.png"
+  if os.path.exists(zelle_img_path):
+    st.image(zelle_img_path, use_container_width=True)
   else:
     st.info("Upload zelle_qr.png")
 
@@ -1007,9 +1033,9 @@ with tabs[4]:
         st.markdown("Name: **Jameka Hatton**")
         st.markdown("Handle: `@Jameka-Hatton`")
       with pay_info_col3:
-        st.markdown("**Zelle**")
-        st.markdown("Name: **Alexander Thompson**")
-        st.markdown("Phone/ID: `8632364196`")
+        st.markdown("**Zelle (Partner Routed)**")
+        st.markdown(f"Name: **{active_zelle['name']}**")
+        st.markdown(f"Phone/ID: `{active_zelle['identifier']}`")
 
     st.markdown("---")
     st.subheader("Customer Shipping & Payment Submission Form")
