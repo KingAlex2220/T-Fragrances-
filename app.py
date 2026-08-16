@@ -406,7 +406,7 @@ PARTNER_MAPPING = {
     "alex": "Alexander Thompson",
     "jameka": "Jameka Hatton",
     "ray": "Ira Ray Thompson",
-    "eq": "Eriq Dior",
+    "eq": "Eric Dior",
 }
 
 # Zelle Accounts dynamically routed based on referrer tag
