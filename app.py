@@ -1310,9 +1310,9 @@ st.markdown("---")
 st.caption(f"**Legal Disclaimer:** {DISCLAIMER_TEXT}")
 st.caption(f"{ALLERGY_DISCLAIMER_TEXT}")
 
-# =============================================
+# ==========================================
 # CUSTOM SIDEBAR ELLIPSIS MENU & THEME SWITCHER
-# =============================================
+# ==========================================
 with st.sidebar:
     st.markdown("<br><br><br>" * 3, unsafe_allow_html=True) 
     st.divider() 
@@ -1435,8 +1435,5 @@ with st.sidebar:
             
         st.caption("T Fragrances POS v1.0.0")
 
-    # 🟢 NEW: Add a native Fork link button at the very bottom of the sidebar
+    # This lives perfectly aligned outside the expander container row
     st.link_button("🍴 Fork App", "https://streamlit.io", use_container_width=True)
-
-            
-        st.caption("T Fragrances POS v1.0.0")
