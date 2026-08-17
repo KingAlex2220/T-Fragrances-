@@ -21,8 +21,8 @@ st.set_page_config(
 # ==========================================
 st.markdown("""
 <style>
-    /* Ensure universal high-contrast legibility for input boxes and text areas */
-    .stTextInput input, .stTextArea textarea, div[data-baseweb="input"] input {
+    /* Ensure universal high-contrast legibility for input boxes, text areas, and selectboxes */
+    .stTextInput input, .stTextArea textarea, div[data-baseweb="input"] input, div[data-baseweb="select"] span {
         color: inherit !important;
         -webkit-text-fill-color: inherit !important;
     }
@@ -1417,8 +1417,23 @@ with st.sidebar:
                 div[data-testid="stExpander"] summary * { color: #31333F !important; }
                 div[data-testid="stExpander"] * { color: #31333F !important; }
                 
-                div[data-baseweb="select"] > div { background-color: #FFFFFF !important; color: #31333F !important; border: 1px solid #D3D3D3 !important; }
-                div[data-baseweb="select"] * { color: #31333F !important; }
+                /* Target Streamlit Selectboxes / BaseWeb Dropdowns for Light Mode */
+                div[data-baseweb="select"] > div, 
+                div[data-baseweb="select"] div,
+                div[data-baseweb="menu"],
+                ul[data-baseweb="menu"] { 
+                    background-color: #FFFFFF !important; 
+                    background: #FFFFFF !important;
+                    color: #31333F !important; 
+                }
+                
+                div[data-baseweb="select"] span, 
+                div[data-baseweb="select"] div[role="button"],
+                ul[data-baseweb="menu"] li div { 
+                    color: #31333F !important; 
+                    -webkit-text-fill-color: #31333F !important; 
+                }
+                
                 label { color: #31333F !important; }
                 
                 button[data-baseweb="tab"] { color: #555555 !important; font-weight: 500 !important; }
