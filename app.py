@@ -1364,7 +1364,7 @@ with st.sidebar:
         
         theme_choice = st.selectbox(
             "Select Theme Mode",
-            options=["Light Mode", "Dark Mode", "Midnight Blue"],
+            options=["Dark Mode", "Light Mode", "Midnight Blue"],
             key="app_theme_selection"
         )
         
