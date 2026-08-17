@@ -1211,15 +1211,15 @@ with tabs[5]:
           if row["is_priority"]:
             st.warning("🔥 Priority Preorder Queue Active")
 
-    # ------------------------------------------
-    # TAB 7: MASTER ADMIN & RESTOCKING TOOL
-    # ------------------------------------------
-    with tabs[6]:
-      st.header("🔒 Master Admin Database & Restocking Management")
-      admin_pwd = st.text_input("Enter Admin Security Password", type="password")
+# ------------------------------------------
+# TAB 7: MASTER ADMIN & RESTOCKING TOOL
+# ------------------------------------------
+with tabs[6]:
+  st.header("🔒 Master Admin Database & Restocking Management")
+  admin_pwd = st.text_input("Enter Admin Security Password", type="password")
 
-      if admin_pwd == "Safe9uard-tf80":
-        st.success("Staff Authentication Verified")
+  if admin_pwd == "Safe9uard-tf80":
+    st.success("Staff Authentication Verified")
 
     # --- PARTNERSHIP & AFFILIATE PERFORMANCE TRACKER ---
     st.subheader("🤝 Partner & Affiliate Performance Tracker")
