@@ -16,6 +16,24 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
+# ==========================================
+# GLOBAL THEME & CONTAINER CONTRAST FIX
+# ==========================================
+st.markdown("""
+<style>
+    /* Ensure universal high-contrast legibility for input boxes and text areas */
+    .stTextInput input, .stTextArea textarea, div[data-baseweb="input"] input {
+        color: inherit !important;
+        -webkit-text-fill-color: inherit !important;
+    }
+    
+    /* Harmonize container and box boundaries for custom themes */
+    div[data-testid="stVerticalBlock"] div[data-testid="stContainer"] {
+        border-color: rgba(128, 128, 128, 0.2);
+    }
+</style>
+""", unsafe_allow_html=True)
+
 
 # ==========================================
 # DATABASE SETUP & AUTO-MIGRATION
@@ -508,7 +526,6 @@ with pay_tab3:
   st.markdown(f"**{active_zelle['name']}**")
   st.markdown(f"`{active_zelle['identifier']}`")
   
-  # Check partner-specific QR image first, fall back to default zelle_qr.png
   zelle_img_path = active_zelle["qr_file"] if os.path.exists(active_zelle["qr_file"]) else "zelle_qr.png"
   if os.path.exists(zelle_img_path):
     st.image(zelle_img_path, use_container_width=True)
@@ -1049,7 +1066,6 @@ with tabs[4]:
         phone = st.text_input("Phone Number *")
         address = st.text_input("Shipping Address *")
 
-      # Manual referral override option if they weren't tracked via URL link
       manual_ref = st.text_input(
           "Partner / Affiliate Referral Tag (Optional if referred by a partner)",
           value=current_ref_tag,
@@ -1459,7 +1475,6 @@ with st.sidebar:
         if st.button("Rerun App Session", key="sidebar_rerun"):
             st.rerun()
             
-        st.caption("T Fragrances POS v1.0.0")
+        st.caption("T Fragrances POS v1.0.1")
 
-    # This lives perfectly aligned outside the expander container row
     st.link_button("🍴 Fork App", "https://share.streamlit.io", use_container_width=True)
