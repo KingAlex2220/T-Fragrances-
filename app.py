@@ -468,12 +468,12 @@ VENMO_ACCOUNTS = {
     },
     "eq": {
         "name": "Eric Dior",
-        "identifier": "@Eric-Dior",
+        "identifier": "@EqDior",
         "qr_file": "venmo_qr_eric.png",
     },
     "eric": {
         "name": "Eric Dior",
-        "identifier": "@Eric-Dior",
+        "identifier": "@EqDior",
         "qr_file": "venmo_qr_eric.png",
     },
 }
