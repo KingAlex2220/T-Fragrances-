@@ -18,21 +18,35 @@ st.set_page_config(
 # =====================
 # Theme Dark Adjustment
 # =====================
-st.markdown(
-    """
+st.markdown("""
     <style>
-        /* Force Dark Mode background and text colors globally */
+        /* Force global dark background and text color */
         .stApp {
             background-color: #0E1117 !important;
             color: #FAFAFA !important;
         }
+        
+        /* Ensure all text, headers, and labels stay visible in white */
+        h1, h2, h3, h4, h5, h6, p, span, label, div {
+            color: #FAFAFA !important;
+        }
+        
+        /* Style input fields and text areas for dark mode */
+        div[data-baseweb="input"] input, .stTextInput input, .stTextArea textarea {
+            background-color: #262730 !important;
+            color: #FAFAFA !important;
+            -webkit-text-fill-color: #FAFAFA !important;
+        }
+        
+        /* Style the sidebar */
         section[data-testid="stSidebar"] {
             background-color: #1A1C23 !important;
         }
+        section[data-testid="stSidebar"] * {
+            color: #FAFAFA !important;
+        }
     </style>
-    """,
-    unsafe_allow_html=True,
-)
+""", unsafe_allow_html=True)
 # ==========================================
 # GLOBAL THEME & CONTAINER CONTRAST FIX
 # ==========================================
