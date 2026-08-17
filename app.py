@@ -1220,6 +1220,8 @@ with tabs[6]:
 
   if admin_pwd == "Safe9uard-tf80":
     st.success("Staff Authentication Verified")
+      elif admin_pwd:
+    st.error("Invalid Security Password.")
 
     # --- PARTNERSHIP & AFFILIATE PERFORMANCE TRACKER ---
     st.subheader("🤝 Partner & Affiliate Performance Tracker")
