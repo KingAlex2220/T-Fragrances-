@@ -1227,8 +1227,8 @@ with tabs[5]:
         if entered_pwd == "Safe9uard-tf80":
           st.session_state.admin_authenticated = True
           st.rerun()
-        elif entered_pwd:
-          st.error("Invalid Security Password.")
+       elif "admin_password_input" in st.session_state and st.session_state.admin_password_input:
+        st.error("Invalid Security Password.")
       
       # Once authenticated, render the admin dashboard and provide a logout option
       if st.session_state.admin_authenticated:
