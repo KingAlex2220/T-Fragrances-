@@ -425,9 +425,11 @@ PARTNER_MAPPING = {
     "jameka": "Jameka Hatton",
     "ray": "Ira Ray Thompson",
     "eq": "Eric Dior",
+    "eric": "Eric Dior",  # Alias for Eric Dior
 }
-
+# ==========================================
 # Zelle Accounts dynamically routed based on referrer tag
+# ==========================================
 ZELLE_ACCOUNTS = {
     "alex": {
         "name": "Alexander Thompson",
@@ -448,9 +450,33 @@ ZELLE_ACCOUNTS = {
         "name": "Eriq Dior",
         "identifier": "6893122796",
         "qr_file": "zelle_qr_eq.png"
-    }
+    },
+    "eric": {
+        "name": "Eric Dior",
+        "identifier": "6893122796",
+        "qr_file": "zelle_qr_eq.png",
+    },
 }
-
+# ==========================================
+# Venmo Accounts dynamically routed based on referrer tag
+# ==========================================
+VENMO_ACCOUNTS = {
+    "jameka": {
+        "name": "Jameka Hatton",
+        "identifier": "@Jameka-Hatton",
+        "qr_file": "venmo_qr.png"
+    },
+    "eq": {
+        "name": "Eric Dior",
+        "identifier": "@Eric-Dior",
+        "qr_file": "venmo_qr_eric.png",
+    },
+    "eric": {
+        "name": "Eric Dior",
+        "identifier": "@Eric-Dior",
+        "qr_file": "venmo_qr_eric.png",
+    },
+}
 DEFAULT_ZELLE_KEY = "alex"
 
 query_params = st.query_params
@@ -515,10 +541,12 @@ with pay_tab1:
     st.info("Upload cashapp_qr.png")
 
 with pay_tab2:
-  st.markdown("**Jameka Hatton**")
-  st.markdown("`@Jameka-Hatton`")
-  if os.path.exists("venmo_qr.png"):
-    st.image("venmo_qr.png", use_container_width=True)
+  st.markdown(f"**{active_venmo['name']}**")
+  st.markdown(f"`{active_venmo['identifier']}`")
+  
+  venmo_img_path = active_venmo["qr_file"] if os.path.exists(active_venmo["qr_file"]) else "venmo_qr.png"
+  if os.path.exists(venmo_img_path):
+    st.image(venmo_img_path, use_container_width=True)
   else:
     st.info("Upload venmo_qr.png")
 
@@ -1046,9 +1074,9 @@ with tabs[4]:
         st.markdown("Name: **Jameka Howell**")
         st.markdown("Handle: `$JaMekaHowell`")
       with pay_info_col2:
-        st.markdown("**Venmo**")
-        st.markdown("Name: **Jameka Hatton**")
-        st.markdown("Handle: `@Jameka-Hatton`")
+        st.markdown("**Venmo (Partner Routed)**")
+        st.markdown(f"Name: **{active_venmo['name']}**")
+        st.markdown(f"Handle: `{active_venmo['identifier']}`")
       with pay_info_col3:
         st.markdown("**Zelle (Partner Routed)**")
         st.markdown(f"Name: **{active_zelle['name']}**")
