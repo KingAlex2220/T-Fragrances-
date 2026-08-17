@@ -478,6 +478,7 @@ VENMO_ACCOUNTS = {
     },
 }
 DEFAULT_ZELLE_KEY = "alex"
+DEFAULT_VENMO_KEY = "jameka"
 
 query_params = st.query_params
 raw_ref = query_params.get("ref", "").strip().lower()
@@ -498,7 +499,7 @@ current_ref_tag = st.session_state.get("active_ref", "")
 
 # Determine target Zelle payout details
 active_zelle = ZELLE_ACCOUNTS.get(current_ref_key, ZELLE_ACCOUNTS[DEFAULT_ZELLE_KEY])
-
+active_venmo = VENMO_ACCOUNTS.get(current_ref_key, VENMO_ACCOUNTS[DEFAULT_VENMO_KEY])
 # ==========================================
 # SIDEBAR NAVIGATION
 # ==========================================
