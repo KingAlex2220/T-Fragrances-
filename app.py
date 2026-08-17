@@ -423,7 +423,7 @@ ZELLE_ACCOUNTS = {
     },
     "ray": {
         "name": "Ira Ray Thompson",
-        "identifier": "ira.thompson@example.com",
+        "identifier": "4079126043",
         "qr_file": "zelle_qr_ray.png"
     },
     "eq": {
