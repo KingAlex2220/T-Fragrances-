@@ -1212,14 +1212,31 @@ with tabs[5]:
             st.warning("🔥 Priority Preorder Queue Active")
 
 # ------------------------------------------
-# TAB 7: MASTER ADMIN & RESTOCKING TOOL
-# ------------------------------------------
-with tabs[6]:
-  st.header("🔒 Master Admin Database & Restocking Management")
-  admin_pwd = st.text_input("Enter Admin Security Password", type="password")
+    # TAB 7: MASTER ADMIN & RESTOCKING TOOL
+    # ------------------------------------------
+    with tabs[6]:
+      st.header("🔒 Master Admin Database & Restocking Management")
+      
+      # Initialize session state for admin auth if not present
+      if "admin_authenticated" not in st.session_state:
+        st.session_state.admin_authenticated = False
 
-  if admin_pwd == "Safe9uard-tf80":
-    st.success("Staff Authentication Verified")
+      # Only show the password box if not already authenticated
+      if not st.session_state.admin_authenticated:
+        entered_pwd = st.text_input("Enter Admin Security Password", type="password", key="admin_password_input")
+        if entered_pwd == "Safe9uard-tf80":
+          st.session_state.admin_authenticated = True
+          st.rerun()
+        elif entered_pwd:
+          st.error("Invalid Security Password.")
+      
+      # Once authenticated, render the admin dashboard and provide a logout option
+      if st.session_state.admin_authenticated:
+        st.success("Staff Authentication Verified")
+        
+        if st.button("Lock Admin Session"):
+          st.session_state.admin_authenticated = False
+          st.rerun()
 
     # --- PARTNERSHIP & AFFILIATE PERFORMANCE TRACKER ---
     st.subheader("🤝 Partner & Affiliate Performance Tracker")
