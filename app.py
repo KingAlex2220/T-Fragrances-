@@ -15,7 +15,24 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded",
 )
-
+# =====================
+# Theme Dark Adjustment
+# =====================
+st.markdown(
+    """
+    <style>
+        /* Force Dark Mode background and text colors globally */
+        .stApp {
+            background-color: #0E1117 !important;
+            color: #FAFAFA !important;
+        }
+        section[data-testid="stSidebar"] {
+            background-color: #1A1C23 !important;
+        }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
 # ==========================================
 # GLOBAL THEME & CONTAINER CONTRAST FIX
 # ==========================================
