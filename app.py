@@ -1163,7 +1163,7 @@ with tabs[4]:
           " Disclaimer and agree to perform a skin patch test prior to use."
       )
 
-      if st.form_submit_button("Submit Order"):
+            if st.form_submit_button("Submit Order"):
         if not (name and email and phone and address):
           st.error("Please fill in all required customer fields.")
         elif not payment_confirmed:
@@ -1180,6 +1180,7 @@ with tabs[4]:
           items_str = ", ".join(summary_list)
           final_tag_to_save = manual_ref.strip().lower() if manual_ref else current_ref_tag
 
+          # 1. Save the order to the database first
           save_order_to_db(
               name,
               email,
@@ -1208,18 +1209,41 @@ with tabs[4]:
             conn_gc.commit()
             conn_gc.close()
 
-          st.success(
-              f"Order and payment verification successfully submitted for"
-              f" {name}!"
-          )
+          st.success(f"Order successfully submitted into our system for {name}!")
           if is_priority:
-            st.warning(
-                "⚡ Priority Preorder activated. Production scheduled on"
-                " fast-track timeline."
-            )
+            st.warning("⚡ Priority Preorder activated. Production scheduled on fast-track timeline.")
+
+          # ==========================================
+          # 📲 AUTOMATED MOBILE APP DEEP LINKS
+          # ==========================================
+          st.markdown("### 💳 Launch Mobile App to Complete Payment")
+          st.write("Tap the button below to open your payment app with your order details pre-filled:")
+
+          if payment_method == "Cash App":
+              # Clean the handle (removes '$' symbol if present in dictionary string)
+              clean_cash_tag = active_cashapp['identifier'].replace("$", "")
+              # Formats the deep link with the partner handle and final total
+              cash_link = f"https://cash.app{clean_cash_tag}/{final_subtotal:.2f}"
+              
+              st.link_button("🚀 Launch Cash App & Pay Now", cash_link, type="primary", use_container_width=True)
+
+          elif payment_method == "Venmo":
+              # Clean the handle (removes '@' symbol if present in dictionary string)
+              clean_venmo_tag = active_venmo['identifier'].replace("@", "")
+              # Formats deep link using Venmo's payment tracking web intent parameter schema
+              venmo_link = f"https://venmo.com{clean_venmo_tag}?txn=pay&amount={final_subtotal:.2f}&note=T-Fragrances+Order"
+              
+              st.link_button("🚀 Launch Venmo & Pay Now", venmo_link, type="primary", use_container_width=True)
+
+          elif payment_method == "Zelle":
+              # Fallback information message box for Zelle users
+              st.info(f"Please open your banking app manually and send **${final_subtotal:.2f}** to: **{active_zelle['name']}** ({active_zelle['identifier']})")
+
+          # 2. Reset shopping session tracking
           st.session_state.cart = {}
           st.session_state.applied_gift_card = None
           st.session_state.gift_card_discount = 0.0
+
 
 # ------------------------------------------
 # TAB 6: CUSTOMER ORDER LOOKUP
