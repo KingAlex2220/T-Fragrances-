@@ -488,14 +488,14 @@ CASHAPP_ACCOUNTS = {
     },
     "eq": {
         "name": "Eric Dior",
-        "identifier": "$EqDior3",      # 👈 PUT YOUR CASH APP HANDLE HERE
+        "identifier": "$EqDior3", 
         "qr_file": "cashapp_qr_eric.png"
     },
     "eric": {
         "name": "Eric Dior",
-        "identifier": "$EqDior3",      # 👈 PUT YOUR CASH APP HANDLE HERE
+        "identifier": "$EqDior3",
         "qr_file": "cashapp_qr_eric.png"
-    }
+    },
 }
 DEFAULT_CASHAPP_KEY = "jameka"
 
