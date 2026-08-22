@@ -1001,8 +1001,8 @@ with tabs[3]:
           st.caption(f"Product: {match_blend} | Date: {row['review_date']}")
           st.write(f'"{row["review_text"]}"')
 
-    with rev_sub_tab2:
-    with st.form("leave_review_form"):
+with rev_sub_tab2:
+with st.form("leave_review_form"):
       st.markdown("### Share Your Experience")
       rev_name = st.text_input("Your Name *")
       rev_rating = st.slider("Rating (1 to 5 Stars)", min_value=1, max_value=5, value=5)
