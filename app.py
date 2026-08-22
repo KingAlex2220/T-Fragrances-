@@ -425,11 +425,9 @@ PARTNER_MAPPING = {
     "jameka": "Jameka Hatton",
     "ray": "Ira Ray Thompson",
     "eq": "Eric Dior",
-    "eric": "Eric Dior",  # Alias for Eric Dior
+    "eric": "Eric Dior",
 }
-# ==========================================
-# Zelle Accounts dynamically routed based on referrer tag
-# ==========================================
+
 ZELLE_ACCOUNTS = {
     "alex": {
         "name": "Alexander Thompson",
@@ -458,9 +456,7 @@ ZELLE_ACCOUNTS = {
     },
 }
 DEFAULT_ZELLE_KEY = "alex"
-# ==========================================
-# Venmo Accounts dynamically routed based on referrer tag
-# ==========================================
+
 VENMO_ACCOUNTS = {
     "jameka": {
         "name": "Jameka Hatton",
@@ -479,9 +475,7 @@ VENMO_ACCOUNTS = {
     },
 }
 DEFAULT_VENMO_KEY = "jameka"
-# ==========================================
-# Cash App Accounts dynamically routed based on referrer tag
-# ==========================================
+
 CASHAPP_ACCOUNTS = {
     "jameka": {
         "name": "Jameka Howell",
@@ -500,9 +494,7 @@ CASHAPP_ACCOUNTS = {
     },
 }
 DEFAULT_CASHAPP_KEY = "jameka"
-# ==========================================
-# URL PARAMETER DISPATCH LOOKUPS
-# ==========================================
+
 query_params = st.query_params
 raw_ref = query_params.get("ref", "").strip().lower()
 
@@ -520,10 +512,10 @@ else:
 current_ref_key = st.session_state.get("active_ref_key", DEFAULT_ZELLE_KEY)
 current_ref_tag = st.session_state.get("active_ref", "")
 
-# Determine target Zelle payout details
 active_zelle = ZELLE_ACCOUNTS.get(current_ref_key, ZELLE_ACCOUNTS[DEFAULT_ZELLE_KEY])
 active_venmo = VENMO_ACCOUNTS.get(current_ref_key, VENMO_ACCOUNTS[DEFAULT_VENMO_KEY])
 active_cashapp = CASHAPP_ACCOUNTS.get(current_ref_key, CASHAPP_ACCOUNTS[DEFAULT_CASHAPP_KEY])
+
 # ==========================================
 # SIDEBAR NAVIGATION
 # ==========================================
@@ -559,8 +551,6 @@ pay_tab1, pay_tab2, pay_tab3 = st.sidebar.tabs(["Cash App", "Venmo", "Zelle"])
 
 with pay_tab1:
   st.markdown(f"**{active_cashapp['name']}**")
-  
-  # Format a clean clickable Cash App link
   clean_cash_tag = active_cashapp['identifier'].replace("$", "")
   st.markdown(f"Handle: [👉 ${clean_cash_tag}](https://cash.app{clean_cash_tag})")
   
@@ -572,8 +562,6 @@ with pay_tab1:
 
 with pay_tab2:
   st.markdown(f"**{active_venmo['name']}**")
-  
-  # Format a clean clickable Venmo link
   clean_venmo_tag = active_venmo['identifier'].replace("@", "")
   st.markdown(f"Handle: [👉 @{clean_venmo_tag}](https://venmo.com{clean_venmo_tag})")
   
@@ -595,7 +583,7 @@ with pay_tab3:
 
 
 # ==========================================
-# SIDEBAR - SHOPPING BAG SUMMARY
+# SIDEBAR - SHOPPING BAG SUMMARY ($60 BOGO LOGIC)
 # ==========================================
 st.sidebar.markdown("---")
 st.sidebar.subheader("🛒 Shopping Bag Summary")
@@ -606,27 +594,38 @@ raw_subtotal = sum(
     for i_id, qty in st.session_state.cart.items()
 )
 
+# --- NEW $60 BOGO PRICING & SHIPPING LOGIC ---
 discount = 0.0
 discount_label = ""
+shipping_fee = 0.0
 
-if raw_subtotal >= 100.0:
-  discount = 0.20
-  discount_label = "20% OFF (Spend $100+ Tier)"
-elif total_qty >= 3:
-  discount = 0.15
-  discount_label = "15% OFF (3+ Items Tier)"
-elif total_qty == 2:
-  discount = 0.10
-  discount_label = "10% OFF (2 Items Tier)"
-
-subtotal_after_volume = raw_subtotal * (1 - discount)
-final_subtotal = max(
-    0.0, subtotal_after_volume - st.session_state.gift_card_discount
-)
+if total_qty >= 2:
+  # Automatically group items into BOGO pairs ($60 per pair, includes free shipping)
+  pairs = total_qty // 2
+  remainder = total_qty % 2
+  
+  bogo_subtotal = pairs * 60.0
+  remainder_subtotal = remainder * 45.0
+  subtotal_after_bogo = bogo_subtotal + remainder_subtotal
+  
+  discount_label = f"🔥 BOGO Deal Applied ({pairs} Pair(s) @ $60 w/ Free Shipping)"
+  shipping_fee = 9.0 if remainder > 0 else 0.0  # Only charge shipping if there's an unpaired single bottle
+  final_subtotal = max(0.0, subtotal_after_bogo + shipping_fee - st.session_state.gift_card_discount)
+elif total_qty == 1:
+  # Single bottle pricing: $45 + $9 shipping fee
+  shipping_fee = 9.0
+  final_subtotal = max(0.0, 45.0 + shipping_fee - st.session_state.gift_card_discount)
+  discount_label = "Single Bottle Rate ($45 + $9 Shipping)"
+else:
+  final_subtotal = 0.0
 
 st.sidebar.write(f"**Items in Bag:** {total_qty}")
-if discount > 0:
-  st.sidebar.write(f"**Volume Discount:** {discount_label}")
+st.sidebar.write(f"**Pricing Tier:** {discount_label}")
+if shipping_fee > 0:
+  st.sidebar.write(f"**Shipping Fee:** ${shipping_fee:.2f}")
+else:
+  st.sidebar.write("**Shipping:** 🎉 **FREE SHIPPING APPLIED!**")
+
 if st.session_state.applied_gift_card:
   st.sidebar.write(
       f"**Gift Card Applied:** -${st.session_state.gift_card_discount:.2f}"
@@ -637,6 +636,9 @@ st.sidebar.subheader(f"Total: ${final_subtotal:.2f}")
 # MAIN INTERFACE
 # ==========================================
 st.title("T Fragrances")
+
+# --- PROMINENT BOGO & FREE SHIPPING BANNER ---
+st.success("🚨 **LIMITED TIME SPECIAL:** **BUY ONE, GET ONE FREE ($60 Total)** + **FREE SHIPPING!** Add 2 or more bottles to automatically unlock your BOGO deal.")
 
 # --- NATIVE GITHUB RAW MP4 VIDEO PLAYER ---
 st.video(
@@ -707,8 +709,8 @@ tabs = st.tabs([
 with tabs[0]:
   st.header("T Fragrances Signature Blends")
   st.caption(
-      "Featuring our exclusive signature 4 blends ($45.00 each). Men's blends"
-      " (No. 1 & No. 4) and Women's blends (No. 2 & No. 3)."
+      "Featuring our exclusive signature 4 blends. Men's blends"
+      " (No. 1 & No. 4) and Women's blends (No. 2 & No. 3). **Buy One, Get One Free for $60 with Free Shipping!** *(Single bottles available at $45 + $9 shipping)*."
   )
 
   cols = st.columns(2)
@@ -735,12 +737,12 @@ with tabs[0]:
             st.markdown(f"### {item['name']}")
             st.caption(f"**{item['gender']}'s** • {item['category']}")
             st.write(f"*{item['notes']}*")
-            st.subheader(f"${item['price']:.2f}")
+            st.subheader(f"$45.00 ea. *(or BOGO: 2 for $60)*")
         else:
           st.markdown(f"### {item['name']}")
           st.caption(f"**{item['gender']}'s** • {item['category']}")
           st.write(f"*{item['notes']}*")
-          st.subheader(f"${item['price']:.2f}")
+          st.subheader(f"$45.00 ea. *(or BOGO: 2 for $60)*")
 
         if stock_level <= 0:
           st.error("🔥 Out of Stock — Priority Preorder Available")
@@ -764,7 +766,7 @@ with tabs[1]:
   st.info(
       "✨ **Notice:** You are ordering 100% oil-based designer style"
       " impressions or **Home Scents** of the products you see scanned from the"
-      " QR code ($45.00 per bottle/unit)."
+      " QR code. **BOGO Deal Active: 2 for $60 with Free Shipping!**"
   )
 
   with st.form("qr_request_line_form"):
@@ -808,17 +810,18 @@ with tabs[1]:
             " from the QR code."
         )
       else:
-        qr_subtotal = qr_total_qty * 45.0
-
-        qr_discount = 0.0
-        if qr_subtotal >= 100.0:
-          qr_discount = 0.20
-        elif qr_total_qty >= 3:
-          qr_discount = 0.15
-        elif qr_total_qty == 2:
-          qr_discount = 0.10
-
-        qr_final_total = qr_subtotal * (1 - qr_discount)
+        # QR Form $60 BOGO Calculation
+        if qr_total_qty >= 2:
+          qr_pairs = qr_total_qty // 2
+          qr_remainder = qr_total_qty % 2
+          qr_final_total = (qr_pairs * 60.0) + (qr_remainder * 45.0)
+          qr_shipping = 9.0 if qr_remainder > 0 else 0.0
+          qr_final_total += qr_shipping
+          qr_disc_label = f"BOGO Active ({qr_pairs} pair(s) @ $60 w/ Free Shipping)"
+        else:
+          qr_final_total = 45.0 + 9.0
+          qr_shipping = 9.0
+          qr_disc_label = "Single Bottle ($45 + $9 shipping)"
 
         save_order_to_db(
             name=qr_cust_name,
@@ -827,14 +830,14 @@ with tabs[1]:
             address=qr_shipping_address,
             items_summary=qr_item_requests,
             qty=qr_total_qty,
-            subtotal=qr_subtotal,
-            discount=qr_discount,
+            subtotal=qr_total_qty * 45.0,
+            discount=0.0,
             total=qr_final_total,
             payment_method=qr_payment_method,
             is_priority=1,
             notes=(
-                "QR Code Custom Request Order (Scents / Home Scents)."
-                f" Desired Items: {qr_item_requests}. "
+                f"QR Code Custom Request Order. Pricing Tier: {qr_disc_label}. "
+                f"Desired Items: {qr_item_requests}. "
                 + (qr_notes if qr_notes else "")
             ),
             cart_items={},
@@ -868,7 +871,7 @@ with tabs[2]:
       gc_purchaser = st.text_input("Your Name *")
       gc_recipient = st.text_input("Recipient Email or Name *")
       gc_value = st.number_input(
-          "Gift Card Amount ($)", min_value=10.0, value=45.0, step=5.0
+          "Gift Card Amount ($)", min_value=10.0, value=60.0, step=5.0
       )
       gc_payment_method = st.selectbox(
           "Settlement Method Used *",
@@ -1002,26 +1005,26 @@ with tabs[3]:
           st.write(f'"{row["review_text"]}"')
 
     with rev_sub_tab2:
-     with st.form("leave_review_form"):
-      st.markdown("### Share Your Experience")
-      rev_name = st.text_input("Your Name *")
-      rev_rating = st.slider("Rating (1 to 5 Stars)", min_value=1, max_value=5, value=5)
-      
-      blend_choices = {item["name"]: item["id"] for item in FRAGRANCE_CATALOG}
-      blend_choices["General Store / QR Request Experience"] = "general"
-      
-      chosen_blend_name = st.selectbox("Select Fragrance / Product", list(blend_choices.keys()))
-      rev_text = st.text_area("Your Review / Testimonial *")
-      
-      submit_review = st.form_submit_button("Submit Review")
+      with st.form("leave_review_form"):
+        st.markdown("### Share Your Experience")
+        rev_name = st.text_input("Your Name *")
+        rev_rating = st.slider("Rating (1 to 5 Stars)", min_value=1, max_value=5, value=5)
+        
+        blend_choices = {item["name"]: item["id"] for item in FRAGRANCE_CATALOG}
+        blend_choices["General Store / QR Request Experience"] = "general"
+        
+        chosen_blend_name = st.selectbox("Select Fragrance / Product", list(blend_choices.keys()))
+        rev_text = st.text_area("Your Review / Testimonial *")
+        
+        submit_review = st.form_submit_button("Submit Review")
 
-      if submit_review:
-        if not (rev_name and rev_text):
-          st.error("Please provide your name and your review message.")
-        else:
-          target_blend_id = blend_choices[chosen_blend_name]
-          save_review(rev_name, rev_rating, target_blend_id, rev_text)
-          st.success("🎉 Thank you! Your review has been successfully submitted.")
+        if submit_review:
+          if not (rev_name and rev_text):
+            st.error("Please provide your name and your review message.")
+          else:
+            target_blend_id = blend_choices[chosen_blend_name]
+            save_review(rev_name, rev_rating, target_blend_id, rev_text)
+            st.success("🎉 Thank you! Your review has been successfully submitted.")
 
 # ------------------------------------------
 # TAB 5: CHECKOUT & INVOICE GENERATOR
@@ -1030,7 +1033,7 @@ with tabs[4]:
   st.header("🧾 Checkout & Invoice Generator")
 
   if not st.session_state.cart:
-    st.info("Your bag is currently empty.")
+    st.info("Your bag is currently empty. Add items to check out with our BOGO special!")
   else:
     st.subheader("Selected Signature Blends")
     cart_data = []
@@ -1052,13 +1055,15 @@ with tabs[4]:
     c1, c2 = st.columns(2)
     with c1:
       st.markdown(f"**Total Items:** {total_qty}")
-      st.markdown(
-          f"**Applied Discount Tier:**"
-          f" {discount_label if discount > 0 else 'None'}"
-      )
+      st.markdown(f"**Pricing Tier:** {discount_label}")
+      if shipping_fee > 0:
+        st.markdown(f"**Shipping:** ${shipping_fee:.2f}")
+      else:
+        st.markdown("**Shipping:** 🎉 **FREE SHIPPING**")
+
       if st.session_state.applied_gift_card:
         st.markdown(
-            f"**Gift Card Active:** {st.session_state.applied_gift_card}"
+            f"**Gift Card Credit Active:** {st.session_state.applied_gift_card}"
             f" (-${st.session_state.gift_card_discount:.2f})"
         )
     with c2:
@@ -1083,17 +1088,18 @@ with tabs[4]:
         if current_ref_tag:
           st.markdown(f"**Partner Referral:** {current_ref_tag}")
       with inv_col2:
-        st.markdown(f"**Subtotal (Raw):** ${raw_subtotal:.2f}")
-        if discount > 0:
-          st.markdown(
-              f"**Discount ({discount_label}):** -${raw_subtotal * discount:.2f}"
-          )
+        st.markdown(f"**Pricing Tier:** {discount_label}")
+        if shipping_fee > 0:
+          st.markdown(f"**Shipping Fee:** ${shipping_fee:.2f}")
+        else:
+          st.markdown("**Shipping:** **FREE**")
         if st.session_state.applied_gift_card:
           st.markdown(
               f"**Gift Card Credit:**"
               f" -${st.session_state.gift_card_discount:.2f}"
           )
         st.markdown(f"### **Total Due: ${final_subtotal:.2f}**")
+        st.caption("*(Single bottles: $45 + $9 shipping. BOGO pairs: $60 total with FREE shipping!)*")
 
       st.markdown("---")
       st.markdown("### 💳 Designated Payment Destination Info")
@@ -1106,14 +1112,12 @@ with tabs[4]:
       with pay_info_col1:
         st.markdown("**Cash App (Partner Routed)**")
         st.markdown(f"Name: **{active_cashapp['name']}**")
-        
         clean_cash_tag = active_cashapp['identifier'].replace("$", "")
         st.markdown(f"Handle: [👉 ${clean_cash_tag}](https://cash.app{clean_cash_tag})")
         
       with pay_info_col2:
         st.markdown("**Venmo (Partner Routed)**")
         st.markdown(f"Name: **{active_venmo['name']}**")
-        
         clean_venmo_tag = active_venmo['identifier'].replace("@", "")
         st.markdown(f"Handle: [👉 @{clean_venmo_tag}](https://venmo.com{clean_venmo_tag})")
         
@@ -1180,7 +1184,6 @@ with tabs[4]:
           items_str = ", ".join(summary_list)
           final_tag_to_save = manual_ref.strip().lower() if manual_ref else current_ref_tag
 
-          # 1. Save the order to the database first
           save_order_to_db(
               name,
               email,
@@ -1189,7 +1192,7 @@ with tabs[4]:
               items_str,
               total_qty,
               raw_subtotal,
-              discount,
+              0.0,
               final_subtotal,
               payment_method,
               is_priority,
@@ -1213,33 +1216,22 @@ with tabs[4]:
           if is_priority:
             st.warning("⚡ Priority Preorder activated. Production scheduled on fast-track timeline.")
 
-          # ==========================================
-          # 📲 AUTOMATED MOBILE APP DEEP LINKS
-          # ==========================================
           st.markdown("### 💳 Launch Mobile App to Complete Payment")
           st.write("Tap the button below to open your payment app with your order details pre-filled:")
 
           if payment_method == "Cash App":
-              # Clean the handle (removes '$' symbol if present in dictionary string)
               clean_cash_tag = active_cashapp['identifier'].replace("$", "")
-              # Formats the deep link with the partner handle and final total
               cash_link = f"https://cash.app{clean_cash_tag}/{final_subtotal:.2f}"
-              
               st.link_button("🚀 Launch Cash App & Pay Now", cash_link, type="primary", use_container_width=True)
 
           elif payment_method == "Venmo":
-              # Clean the handle (removes '@' symbol if present in dictionary string)
               clean_venmo_tag = active_venmo['identifier'].replace("@", "")
-              # Formats deep link using Venmo's payment tracking web intent parameter schema
               venmo_link = f"https://venmo.com{clean_venmo_tag}?txn=pay&amount={final_subtotal:.2f}&note=T-Fragrances+Order"
-              
               st.link_button("🚀 Launch Venmo & Pay Now", venmo_link, type="primary", use_container_width=True)
 
           elif payment_method == "Zelle":
-              # Fallback information message box for Zelle users
               st.info(f"Please open your banking app manually and send **${final_subtotal:.2f}** to: **{active_zelle['name']}** ({active_zelle['identifier']})")
 
-          # 2. Reset shopping session tracking
           st.session_state.cart = {}
           st.session_state.applied_gift_card = None
           st.session_state.gift_card_discount = 0.0
@@ -1285,7 +1277,6 @@ with tabs[6]:
   if admin_pwd == "Safe9uard-tf80":
     st.success("Staff Authentication Verified")
 
-    # --- PARTNERSHIP & AFFILIATE PERFORMANCE TRACKER ---
     st.subheader("🤝 Partner & Affiliate Performance Tracker")
     st.caption("Review sales volume, orders, and attribution tracked via unique referral links (e.g. `?ref=name`).")
     
@@ -1510,7 +1501,6 @@ with st.sidebar:
                 div[data-testid="stExpander"] summary * { color: #31333F !important; }
                 div[data-testid="stExpander"] * { color: #31333F !important; }
                 
-                /* Target Streamlit Selectboxes / BaseWeb Dropdowns for Light Mode */
                 div[data-baseweb="select"] > div, 
                 div[data-baseweb="select"] div,
                 div[data-baseweb="menu"],
