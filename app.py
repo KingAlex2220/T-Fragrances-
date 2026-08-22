@@ -559,7 +559,10 @@ pay_tab1, pay_tab2, pay_tab3 = st.sidebar.tabs(["Cash App", "Venmo", "Zelle"])
 
 with pay_tab1:
   st.markdown(f"**{active_cashapp['name']}**")
-  st.markdown(f"`{active_cashapp['identifier']}`")
+  
+  # Format a clean clickable Cash App link
+  clean_cash_tag = active_cashapp['identifier'].replace("$", "")
+  st.markdown(f"Handle: [👉 ${clean_cash_tag}](https://cash.app{clean_cash_tag})")
   
   cash_img_path = active_cashapp["qr_file"] if os.path.exists(active_cashapp["qr_file"]) else "cashapp_qr.png"
   if os.path.exists(cash_img_path):
@@ -569,7 +572,10 @@ with pay_tab1:
 
 with pay_tab2:
   st.markdown(f"**{active_venmo['name']}**")
-  st.markdown(f"`{active_venmo['identifier']}`")
+  
+  # Format a clean clickable Venmo link
+  clean_venmo_tag = active_venmo['identifier'].replace("@", "")
+  st.markdown(f"Handle: [👉 @{clean_venmo_tag}](https://venmo.com{clean_venmo_tag})")
   
   venmo_img_path = active_venmo["qr_file"] if os.path.exists(active_venmo["qr_file"]) else "venmo_qr.png"
   if os.path.exists(venmo_img_path):
@@ -579,13 +585,14 @@ with pay_tab2:
 
 with pay_tab3:
   st.markdown(f"**{active_zelle['name']}**")
-  st.markdown(f"`{active_zelle['identifier']}`")
+  st.markdown(f"Phone/ID: `{active_zelle['identifier']}`")
   
   zelle_img_path = active_zelle["qr_file"] if os.path.exists(active_zelle["qr_file"]) else "zelle_qr.png"
   if os.path.exists(zelle_img_path):
     st.image(zelle_img_path, use_container_width=True)
   else:
     st.info("Upload zelle_qr.png")
+
 
 # ==========================================
 # SIDEBAR - SHOPPING BAG SUMMARY
@@ -1095,19 +1102,26 @@ with tabs[4]:
           " authorized channels before confirming your order:"
       )
 
-      pay_info_col1, pay_info_col2, pay_info_col3 = st.columns(3)
+            pay_info_col1, pay_info_col2, pay_info_col3 = st.columns(3)
       with pay_info_col1:
-        st.markdown("**Cash App**")
+        st.markdown("**Cash App (Partner Routed)**")
         st.markdown(f"Name: **{active_cashapp['name']}**")
-        st.markdown(f"Handle: `{active_cashapp['identifier']}`")
+        
+        clean_cash_tag = active_cashapp['identifier'].replace("$", "")
+        st.markdown(f"Handle: [👉 ${clean_cash_tag}](https://cash.app{clean_cash_tag})")
+        
       with pay_info_col2:
         st.markdown("**Venmo (Partner Routed)**")
         st.markdown(f"Name: **{active_venmo['name']}**")
-        st.markdown(f"Handle: `{active_venmo['identifier']}`")
+        
+        clean_venmo_tag = active_venmo['identifier'].replace("@", "")
+        st.markdown(f"Handle: [👉 @{clean_venmo_tag}](https://venmo.com{clean_venmo_tag})")
+        
       with pay_info_col3:
         st.markdown("**Zelle (Partner Routed)**")
         st.markdown(f"Name: **{active_zelle['name']}**")
         st.markdown(f"Phone/ID: `{active_zelle['identifier']}`")
+
 
     st.markdown("---")
     st.subheader("Customer Shipping & Payment Submission Form")
