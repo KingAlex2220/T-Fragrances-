@@ -1102,7 +1102,7 @@ with tabs[4]:
           " authorized channels before confirming your order:"
       )
 
-            pay_info_col1, pay_info_col2, pay_info_col3 = st.columns(3)
+      pay_info_col1, pay_info_col2, pay_info_col3 = st.columns(3)
       with pay_info_col1:
         st.markdown("**Cash App (Partner Routed)**")
         st.markdown(f"Name: **{active_cashapp['name']}**")
