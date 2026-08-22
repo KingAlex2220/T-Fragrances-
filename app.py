@@ -546,7 +546,7 @@ st.sidebar.subheader("📲 Scan to Order & Pay")
 if os.path.exists("qr_code.png"):
   st.sidebar.image(
       "qr_code.png",
-      caption="Scan for QR Portal (More Scents & Home Scents)",
+      caption="Scan for QR Portal or [👉 Click Here to View Full Inventory](https://docs.google.com/spreadsheets/d/11JDSkzjhxLt2a9B1gXDB-k9UuUbZPM6Y/edit?usp=drive_link&ouid=100304567680481548855&rtpof=true&sd=true) (More Scents & Home Scents)",
       use_container_width=True,
   )
 else:
