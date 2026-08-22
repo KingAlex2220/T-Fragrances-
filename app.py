@@ -1001,7 +1001,7 @@ with tabs[3]:
           st.caption(f"Product: {match_blend} | Date: {row['review_date']}")
           st.write(f'"{row["review_text"]}"')
 
-  with rev_sub_tab2:
+    with rev_sub_tab2:
     with st.form("leave_review_form"):
       st.markdown("### Share Your Experience")
       rev_name = st.text_input("Your Name *")
