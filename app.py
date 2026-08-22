@@ -457,6 +457,7 @@ ZELLE_ACCOUNTS = {
         "qr_file": "zelle_qr_eq.png",
     },
 }
+DEFAULT_ZELLE_KEY = "alex"
 # ==========================================
 # Venmo Accounts dynamically routed based on referrer tag
 # ==========================================
@@ -477,6 +478,7 @@ VENMO_ACCOUNTS = {
         "qr_file": "venmo_qr_eric.png",
     },
 }
+DEFAULT_VENMO_KEY = "jameka"
 # ==========================================
 # Cash App Accounts dynamically routed based on referrer tag
 # ==========================================
@@ -498,10 +500,9 @@ CASHAPP_ACCOUNTS = {
     },
 }
 DEFAULT_CASHAPP_KEY = "jameka"
-
-DEFAULT_ZELLE_KEY = "alex"
-DEFAULT_VENMO_KEY = "jameka"
-
+# ==========================================
+# URL PARAMETER DISPATCH LOOKUPS
+# ==========================================
 query_params = st.query_params
 raw_ref = query_params.get("ref", "").strip().lower()
 
@@ -522,6 +523,7 @@ current_ref_tag = st.session_state.get("active_ref", "")
 # Determine target Zelle payout details
 active_zelle = ZELLE_ACCOUNTS.get(current_ref_key, ZELLE_ACCOUNTS[DEFAULT_ZELLE_KEY])
 active_venmo = VENMO_ACCOUNTS.get(current_ref_key, VENMO_ACCOUNTS[DEFAULT_VENMO_KEY])
+active_cashapp = CASHAPP_ACCOUNTS.get(current_ref_key, CASHAPP_ACCOUNTS[DEFAULT_CASHAPP_KEY])
 # ==========================================
 # SIDEBAR NAVIGATION
 # ==========================================
