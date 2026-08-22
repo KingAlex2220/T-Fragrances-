@@ -477,6 +477,28 @@ VENMO_ACCOUNTS = {
         "qr_file": "venmo_qr_eric.png",
     },
 }
+# ==========================================
+# Cash App Accounts dynamically routed based on referrer tag
+# ==========================================
+CASHAPP_ACCOUNTS = {
+    "jameka": {
+        "name": "Jameka Howell",
+        "identifier": "$JaMekaHowell",
+        "qr_file": "cashapp_qr.png"
+    },
+    "eq": {
+        "name": "Eric Dior",
+        "identifier": "$EqDior3",      # 👈 PUT YOUR CASH APP HANDLE HERE
+        "qr_file": "cashapp_qr_eric.png"
+    },
+    "eric": {
+        "name": "Eric Dior",
+        "identifier": "$EqDior3",      # 👈 PUT YOUR CASH APP HANDLE HERE
+        "qr_file": "cashapp_qr_eric.png"
+    }
+}
+DEFAULT_CASHAPP_KEY = "jameka"
+
 DEFAULT_ZELLE_KEY = "alex"
 DEFAULT_VENMO_KEY = "jameka"
 
@@ -534,8 +556,8 @@ st.sidebar.markdown("### 💳 Quick Payment Options")
 pay_tab1, pay_tab2, pay_tab3 = st.sidebar.tabs(["Cash App", "Venmo", "Zelle"])
 
 with pay_tab1:
-  st.markdown("**Jameka Howell**")
-  st.markdown("`$JaMekaHowell`")
+  st.markdown(f"Name: **{active_cashapp['name']}**")
+  st.markdown(f"Handle: `{active_cashapp['identifier']}`")
   if os.path.exists("cashapp_qr.png"):
     st.image("cashapp_qr.png", use_container_width=True)
   else:
