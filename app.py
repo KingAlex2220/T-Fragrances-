@@ -1163,7 +1163,7 @@ with tabs[4]:
           " Disclaimer and agree to perform a skin patch test prior to use."
       )
 
-            if st.form_submit_button("Submit Order"):
+      if st.form_submit_button("Submit Order"):
         if not (name and email and phone and address):
           st.error("Please fill in all required customer fields.")
         elif not payment_confirmed:
