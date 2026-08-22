@@ -495,7 +495,7 @@ CASHAPP_ACCOUNTS = {
         "name": "Eric Dior",
         "identifier": "$EqDior3",      # 👈 PUT YOUR CASH APP HANDLE HERE
         "qr_file": "cashapp_qr_eric.png"
-    },
+    }
 }
 DEFAULT_CASHAPP_KEY = "jameka"
 
@@ -556,10 +556,12 @@ st.sidebar.markdown("### 💳 Quick Payment Options")
 pay_tab1, pay_tab2, pay_tab3 = st.sidebar.tabs(["Cash App", "Venmo", "Zelle"])
 
 with pay_tab1:
-  st.markdown(f"Name: **{active_cashapp['name']}**")
-  st.markdown(f"Handle: `{active_cashapp['identifier']}`")
-  if os.path.exists("cashapp_qr.png"):
-    st.image("cashapp_qr.png", use_container_width=True)
+  st.markdown(f"**{active_cashapp['name']}**")
+  st.markdown(f"`{active_cashapp['identifier']}`")
+  
+  cash_img_path = active_cashapp["qr_file"] if os.path.exists(active_cashapp["qr_file"]) else "cashapp_qr.png"
+  if os.path.exists(cash_img_path):
+    st.image(cash_img_path, use_container_width=True)
   else:
     st.info("Upload cashapp_qr.png")
 
